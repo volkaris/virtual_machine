@@ -1,12 +1,17 @@
 #include <iostream>
 #include "EvaVM.h"
+
 using namespace std;
-int main()
-{
+ 
+
+int main() {
 	EvaVm vm;
-	cout<<AS_CPP_STRING(vm.exec(R"( 42 )"));
-	
+    auto result = vm.exec(R"(
+					(+ 5 x)
+                       )");
 
 	
+
+	// Process the result as needed
+	return 0;
 }
-

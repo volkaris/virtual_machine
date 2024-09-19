@@ -3,7 +3,8 @@
 #include <string>
 #include "OpCode.h"
 #include <array>
-
+#include "parser.h"
+using namespace syntax;
 //#define READ_BYTE() *ip++
 #define STACK_LIMIT 512
 //#define GET_CONST()  constants[READ_BYTE()]
@@ -14,13 +15,14 @@
 class EvaVm {
 public:
 
-	EvaVm()
+	EvaVm()	 : _parser(std::make_unique<parser>())
 	{
-		//sp = stack.begin();
 	}
 
 	EvaValue exec(const std::string& program) {
-		
+
+		decltype(auto)  ast = _parser->parse(program);
+
 		constants.push_back(ALLOC_STRING("Hello"));
 		constants.push_back(ALLOC_STRING(",world!"));
 		
@@ -148,6 +150,8 @@ private:
 
 	//Instruction pointer (Program counter)
 	uint8_t* ip;
+
+	std::unique_ptr<parser> _parser;
 
 	//Constant pool
 	std::vector<EvaValue> constants;
