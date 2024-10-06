@@ -149,7 +149,7 @@
     <ClCompile Include="virtual_machine.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EvaValue.h" />
+    <ClInclude Include="EvaluationValue.h" />
     <ClInclude Include="EvaVM.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="OpCode.h" />

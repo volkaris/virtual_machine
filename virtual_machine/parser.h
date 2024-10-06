@@ -52,6 +52,7 @@
 // clang-format off
 #include <string>
 #include <vector>
+#include <memory>
 
 /**
  * Expression type.
@@ -60,7 +61,7 @@ enum class ExpType {
   NUMBER,
   STRING,
   SYMBOL,
-  LIST,
+  BINARY_EXP,  // For binary expressions like 5+10
 };
 
 /**
@@ -71,28 +72,30 @@ struct Exp {
 
   int number;
   std::string string;
-  std::vector<Exp> list;
+  std::string symbol;
 
-  // Numbers:
+  std::string op;
+  std::shared_ptr<Exp> left;
+  std::shared_ptr<Exp> right;
+
+  // Constructors:
   Exp(int number) : type(ExpType::NUMBER), number(number) {}
 
-  // Strings, Symbols:
-  Exp(std::string& strVal) {
+  Exp(const std::string& strVal) {
     if (strVal[0] == '"') {
       type = ExpType::STRING;
       string = strVal.substr(1, strVal.size() - 2);
     } else {
       type = ExpType::SYMBOL;
-      string = strVal;
+      symbol = strVal;
     }
   }
 
-  // Lists:
-  Exp(std::vector<Exp> list) : type(ExpType::LIST), list(list) {}
-
+  Exp(const std::string& op, std::shared_ptr<Exp> left, std::shared_ptr<Exp> right)
+      : type(ExpType::BINARY_EXP), op(op), left(left), right(right) {}
 };
 
-using Value = Exp;  // clang-format on
+using Value = std::shared_ptr<Exp>;  // clang-format on
 
 namespace syntax {
 
@@ -117,12 +120,16 @@ class Tokenizer;
 enum class TokenType {
   __EMPTY = -1,
   // clang-format off
-  NUMBER = 4,
-  STRING = 5,
-  SYMBOL = 6,
-  TOKEN_TYPE_7 = 7,
-  TOKEN_TYPE_8 = 8,
-  __EOF = 9
+  L_PAREN = 4,
+  R_PAREN = 5,
+  PLUS = 6,
+  MINUS = 7,
+  MULTIPLY = 8,
+  DIVIDE = 9,
+  NUMBER = 10,
+  STRING = 11,
+  SYMBOL = 12,
+  __EOF = 13
   // clang-format on
 };
 
@@ -355,7 +362,7 @@ class Tokenizer {
    * Lexical rules.
    */
   // clang-format off
-  static constexpr size_t LEX_RULES_COUNT = 8;
+  static constexpr size_t LEX_RULES_COUNT = 12;
   static std::array<LexRule, LEX_RULES_COUNT> lexRules_;
   static std::map<TokenizerState, std::vector<size_t>> lexRulesByStartConditions_;
   // clang-format on
@@ -405,11 +412,11 @@ std::string Tokenizer::__EOF("$");
 
 // clang-format off
 inline TokenType _lexRule1(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::TOKEN_TYPE_7;
+return TokenType::__EMPTY;
 }
 
 inline TokenType _lexRule2(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::TOKEN_TYPE_8;
+return TokenType::__EMPTY;
 }
 
 inline TokenType _lexRule3(const Tokenizer& tokenizer, const std::string& yytext) {
@@ -417,22 +424,38 @@ return TokenType::__EMPTY;
 }
 
 inline TokenType _lexRule4(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::__EMPTY;
+return TokenType::L_PAREN;
 }
 
 inline TokenType _lexRule5(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::__EMPTY;
+return TokenType::R_PAREN;
 }
 
 inline TokenType _lexRule6(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::STRING;
+return TokenType::PLUS;
 }
 
 inline TokenType _lexRule7(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::NUMBER;
+return TokenType::MINUS;
 }
 
 inline TokenType _lexRule8(const Tokenizer& tokenizer, const std::string& yytext) {
+return TokenType::MULTIPLY;
+}
+
+inline TokenType _lexRule9(const Tokenizer& tokenizer, const std::string& yytext) {
+return TokenType::DIVIDE;
+}
+
+inline TokenType _lexRule10(const Tokenizer& tokenizer, const std::string& yytext) {
+return TokenType::STRING;
+}
+
+inline TokenType _lexRule11(const Tokenizer& tokenizer, const std::string& yytext) {
+return TokenType::NUMBER;
+}
+
+inline TokenType _lexRule12(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::SYMBOL;
 }
 // clang-format on
@@ -442,16 +465,20 @@ return TokenType::SYMBOL;
 
 // clang-format off
 std::array<LexRule, Tokenizer::LEX_RULES_COUNT> Tokenizer::lexRules_ = {{
-  {std::regex(R"(^\()"), &_lexRule1},
-  {std::regex(R"(^\))"), &_lexRule2},
-  {std::regex(R"(^\/\/.*)"), &_lexRule3},
-  {std::regex(R"(^\/\*[\s\S]*?\*\/)"), &_lexRule4},
-  {std::regex(R"(^\s+)"), &_lexRule5},
-  {std::regex(R"(^"[^\"]*")"), &_lexRule6},
-  {std::regex(R"(^\d+)"), &_lexRule7},
-  {std::regex(R"(^[\w\-+*=!<>/]+)"), &_lexRule8}
+  {std::regex(R"(^\/\/.*)"), &_lexRule1},
+  {std::regex(R"(^\/\*[\s\S]*?\*\/)"), &_lexRule2},
+  {std::regex(R"(^\s+)"), &_lexRule3},
+  {std::regex(R"(^\()"), &_lexRule4},
+  {std::regex(R"(^\))"), &_lexRule5},
+  {std::regex(R"(^\+)"), &_lexRule6},
+  {std::regex(R"(^-)"), &_lexRule7},
+  {std::regex(R"(^\*)"), &_lexRule8},
+  {std::regex(R"(^\/)"), &_lexRule9},
+  {std::regex(R"(^"[^\"]*")"), &_lexRule10},
+  {std::regex(R"(^\d+)"), &_lexRule11},
+  {std::regex(R"(^[\w]+)"), &_lexRule12}
 }};
-std::map<TokenizerState, std::vector<size_t>> Tokenizer::lexRulesByStartConditions_ =  {{TokenizerState::INITIAL, {0, 1, 2, 3, 4, 5, 6, 7}}};
+std::map<TokenizerState, std::vector<size_t>> Tokenizer::lexRulesByStartConditions_ =  {{TokenizerState::INITIAL, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}}};
 // clang-format on
 
 #endif
@@ -653,10 +680,10 @@ class parser {
   }
 
   // clang-format off
-  static constexpr size_t PRODUCTIONS_COUNT = 9;
+  static constexpr size_t PRODUCTIONS_COUNT = 12;
   static std::array<Production, PRODUCTIONS_COUNT> productions_;
 
-  static constexpr size_t ROWS_COUNT = 11;
+  static constexpr size_t ROWS_COUNT = 21;
   static std::array<Row, ROWS_COUNT> table_;
   // clang-format on
 };
@@ -678,9 +705,11 @@ PUSH_VR();
 
 void _handler2(yyparse& parser) {
 // Semantic action prologue.
-auto _1 = POP_V();
+parser.tokensStack.pop_back();
+auto _2 = POP_V();
+parser.tokensStack.pop_back();
 
-auto __ = _1;
+auto __ = _2;
 
  // Semantic action epilogue.
 PUSH_VR();
@@ -689,6 +718,32 @@ PUSH_VR();
 
 void _handler3(yyparse& parser) {
 // Semantic action prologue.
+auto _3 = POP_V();
+parser.tokensStack.pop_back();
+auto _1 = POP_V();
+
+auto __ = std::make_shared<Exp>("+", _1, _3);
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler4(yyparse& parser) {
+// Semantic action prologue.
+auto _3 = POP_V();
+parser.tokensStack.pop_back();
+auto _1 = POP_V();
+
+auto __ = std::make_shared<Exp>("-", _1, _3);
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler5(yyparse& parser) {
+// Semantic action prologue.
 auto _1 = POP_V();
 
 auto __ = _1;
@@ -698,33 +753,13 @@ PUSH_VR();
 
 }
 
-void _handler4(yyparse& parser) {
-// Semantic action prologue.
-auto _1 = POP_T();
-
-auto __ = Exp(std::stoi(_1)) ;
-
- // Semantic action epilogue.
-PUSH_VR();
-
-}
-
-void _handler5(yyparse& parser) {
-// Semantic action prologue.
-auto _1 = POP_T();
-
-auto __ = Exp(_1) ;
-
- // Semantic action epilogue.
-PUSH_VR();
-
-}
-
 void _handler6(yyparse& parser) {
 // Semantic action prologue.
-auto _1 = POP_T();
+auto _3 = POP_V();
+parser.tokensStack.pop_back();
+auto _1 = POP_V();
 
-auto __ = Exp(_1) ;
+auto __ = std::make_shared<Exp>("*", _1, _3);
 
  // Semantic action epilogue.
 PUSH_VR();
@@ -733,11 +768,11 @@ PUSH_VR();
 
 void _handler7(yyparse& parser) {
 // Semantic action prologue.
+auto _3 = POP_V();
 parser.tokensStack.pop_back();
-auto _2 = POP_V();
-parser.tokensStack.pop_back();
+auto _1 = POP_V();
 
-auto __ = _2 ;
+auto __ = std::make_shared<Exp>("/", _1, _3);
 
  // Semantic action epilogue.
 PUSH_VR();
@@ -746,9 +781,9 @@ PUSH_VR();
 
 void _handler8(yyparse& parser) {
 // Semantic action prologue.
+auto _1 = POP_V();
 
-
-auto __ = Exp(std::vector<Exp>{}) ;
+auto __ = _1;
 
  // Semantic action epilogue.
 PUSH_VR();
@@ -757,10 +792,44 @@ PUSH_VR();
 
 void _handler9(yyparse& parser) {
 // Semantic action prologue.
+parser.tokensStack.pop_back();
 auto _2 = POP_V();
-auto _1 = POP_V();
+parser.tokensStack.pop_back();
 
-_1.list.push_back(_2); auto __ = _1 ;
+auto __ = _2;
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler10(yyparse& parser) {
+// Semantic action prologue.
+auto _1 = POP_T();
+
+auto __ = std::make_shared<Exp>(std::stoi(_1));
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler11(yyparse& parser) {
+// Semantic action prologue.
+auto _1 = POP_T();
+
+auto __ = std::make_shared<Exp>(_1);
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler12(yyparse& parser) {
+// Semantic action prologue.
+auto _1 = POP_T();
+
+auto __ = std::make_shared<Exp>(_1);
 
  // Semantic action epilogue.
 PUSH_VR();
@@ -770,14 +839,17 @@ PUSH_VR();
 
 // clang-format off
 std::array<Production, yyparse::PRODUCTIONS_COUNT> yyparse::productions_ = {{{-1, 1, &_handler1},
-{0, 1, &_handler2},
-{0, 1, &_handler3},
-{1, 1, &_handler4},
+{0, 3, &_handler2},
+{1, 3, &_handler3},
+{1, 3, &_handler4},
 {1, 1, &_handler5},
-{1, 1, &_handler6},
+{2, 3, &_handler6},
 {2, 3, &_handler7},
-{3, 0, &_handler8},
-{3, 2, &_handler9}}};
+{2, 1, &_handler8},
+{3, 3, &_handler9},
+{3, 1, &_handler10},
+{3, 1, &_handler11},
+{3, 1, &_handler12}}};
 // clang-format on
 
 // ------------------------------------------------------------------
@@ -785,17 +857,27 @@ std::array<Production, yyparse::PRODUCTIONS_COUNT> yyparse::productions_ = {{{-1
 
 // clang-format off
 std::array<Row, yyparse::ROWS_COUNT> yyparse::table_ = {
-    Row {{0, {TE::Transit, 1}}, {1, {TE::Transit, 2}}, {2, {TE::Transit, 3}}, {4, {TE::Shift, 4}}, {5, {TE::Shift, 5}}, {6, {TE::Shift, 6}}, {7, {TE::Shift, 7}}},
-    Row {{9, {TE::Accept, 0}}},
-    Row {{4, {TE::Reduce, 1}}, {5, {TE::Reduce, 1}}, {6, {TE::Reduce, 1}}, {7, {TE::Reduce, 1}}, {8, {TE::Reduce, 1}}, {9, {TE::Reduce, 1}}},
-    Row {{4, {TE::Reduce, 2}}, {5, {TE::Reduce, 2}}, {6, {TE::Reduce, 2}}, {7, {TE::Reduce, 2}}, {8, {TE::Reduce, 2}}, {9, {TE::Reduce, 2}}},
-    Row {{4, {TE::Reduce, 3}}, {5, {TE::Reduce, 3}}, {6, {TE::Reduce, 3}}, {7, {TE::Reduce, 3}}, {8, {TE::Reduce, 3}}, {9, {TE::Reduce, 3}}},
-    Row {{4, {TE::Reduce, 4}}, {5, {TE::Reduce, 4}}, {6, {TE::Reduce, 4}}, {7, {TE::Reduce, 4}}, {8, {TE::Reduce, 4}}, {9, {TE::Reduce, 4}}},
-    Row {{4, {TE::Reduce, 5}}, {5, {TE::Reduce, 5}}, {6, {TE::Reduce, 5}}, {7, {TE::Reduce, 5}}, {8, {TE::Reduce, 5}}, {9, {TE::Reduce, 5}}},
-    Row {{3, {TE::Transit, 8}}, {4, {TE::Reduce, 7}}, {5, {TE::Reduce, 7}}, {6, {TE::Reduce, 7}}, {7, {TE::Reduce, 7}}, {8, {TE::Reduce, 7}}},
-    Row {{0, {TE::Transit, 10}}, {1, {TE::Transit, 2}}, {2, {TE::Transit, 3}}, {4, {TE::Shift, 4}}, {5, {TE::Shift, 5}}, {6, {TE::Shift, 6}}, {7, {TE::Shift, 7}}, {8, {TE::Shift, 9}}},
-    Row {{4, {TE::Reduce, 6}}, {5, {TE::Reduce, 6}}, {6, {TE::Reduce, 6}}, {7, {TE::Reduce, 6}}, {8, {TE::Reduce, 6}}, {9, {TE::Reduce, 6}}},
-    Row {{4, {TE::Reduce, 8}}, {5, {TE::Reduce, 8}}, {6, {TE::Reduce, 8}}, {7, {TE::Reduce, 8}}, {8, {TE::Reduce, 8}}}
+    Row {{0, {TE::Transit, 1}}, {4, {TE::Shift, 2}}},
+    Row {{13, {TE::Accept, 0}}},
+    Row {{1, {TE::Transit, 3}}, {2, {TE::Transit, 4}}, {3, {TE::Transit, 5}}, {4, {TE::Shift, 6}}, {10, {TE::Shift, 7}}, {11, {TE::Shift, 8}}, {12, {TE::Shift, 9}}},
+    Row {{5, {TE::Shift, 10}}, {6, {TE::Shift, 11}}, {7, {TE::Shift, 12}}},
+    Row {{5, {TE::Reduce, 4}}, {6, {TE::Reduce, 4}}, {7, {TE::Reduce, 4}}, {8, {TE::Shift, 14}}, {9, {TE::Shift, 15}}},
+    Row {{5, {TE::Reduce, 7}}, {6, {TE::Reduce, 7}}, {7, {TE::Reduce, 7}}, {8, {TE::Reduce, 7}}, {9, {TE::Reduce, 7}}},
+    Row {{1, {TE::Transit, 17}}, {2, {TE::Transit, 4}}, {3, {TE::Transit, 5}}, {4, {TE::Shift, 6}}, {10, {TE::Shift, 7}}, {11, {TE::Shift, 8}}, {12, {TE::Shift, 9}}},
+    Row {{5, {TE::Reduce, 9}}, {6, {TE::Reduce, 9}}, {7, {TE::Reduce, 9}}, {8, {TE::Reduce, 9}}, {9, {TE::Reduce, 9}}},
+    Row {{5, {TE::Reduce, 10}}, {6, {TE::Reduce, 10}}, {7, {TE::Reduce, 10}}, {8, {TE::Reduce, 10}}, {9, {TE::Reduce, 10}}},
+    Row {{5, {TE::Reduce, 11}}, {6, {TE::Reduce, 11}}, {7, {TE::Reduce, 11}}, {8, {TE::Reduce, 11}}, {9, {TE::Reduce, 11}}},
+    Row {{13, {TE::Reduce, 1}}},
+    Row {{2, {TE::Transit, 13}}, {3, {TE::Transit, 5}}, {4, {TE::Shift, 6}}, {10, {TE::Shift, 7}}, {11, {TE::Shift, 8}}, {12, {TE::Shift, 9}}},
+    Row {{2, {TE::Transit, 19}}, {3, {TE::Transit, 5}}, {4, {TE::Shift, 6}}, {10, {TE::Shift, 7}}, {11, {TE::Shift, 8}}, {12, {TE::Shift, 9}}},
+    Row {{5, {TE::Reduce, 2}}, {6, {TE::Reduce, 2}}, {7, {TE::Reduce, 2}}, {8, {TE::Shift, 14}}, {9, {TE::Shift, 15}}},
+    Row {{3, {TE::Transit, 16}}, {4, {TE::Shift, 6}}, {10, {TE::Shift, 7}}, {11, {TE::Shift, 8}}, {12, {TE::Shift, 9}}},
+    Row {{3, {TE::Transit, 20}}, {4, {TE::Shift, 6}}, {10, {TE::Shift, 7}}, {11, {TE::Shift, 8}}, {12, {TE::Shift, 9}}},
+    Row {{5, {TE::Reduce, 5}}, {6, {TE::Reduce, 5}}, {7, {TE::Reduce, 5}}, {8, {TE::Reduce, 5}}, {9, {TE::Reduce, 5}}},
+    Row {{5, {TE::Shift, 18}}, {6, {TE::Shift, 11}}, {7, {TE::Shift, 12}}},
+    Row {{5, {TE::Reduce, 8}}, {6, {TE::Reduce, 8}}, {7, {TE::Reduce, 8}}, {8, {TE::Reduce, 8}}, {9, {TE::Reduce, 8}}},
+    Row {{5, {TE::Reduce, 3}}, {6, {TE::Reduce, 3}}, {7, {TE::Reduce, 3}}, {8, {TE::Shift, 14}}, {9, {TE::Shift, 15}}},
+    Row {{5, {TE::Reduce, 6}}, {6, {TE::Reduce, 6}}, {7, {TE::Reduce, 6}}, {8, {TE::Reduce, 6}}, {9, {TE::Reduce, 6}}}
 };
 // clang-format on
 

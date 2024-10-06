@@ -29,7 +29,7 @@
     <ClInclude Include="Logger.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="EvaValue.h">
+    <ClInclude Include="EvaluationValue.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="parser.h">

@@ -1,0 +1,8 @@
+# ninja log v5
+9	8710	7499372520287335	CMakeFiles/virtual_machine.dir/virtual_machine/virtual_machine.cpp.obj	e4b381340f6e057a
+16	161	7499369362492843	CMakeFiles/virtual_machine.dir/virtual_machine/compiler.cpp.obj	68e4adc45583883d
+8712	12903	7499372562302030	virtual_machine.exe	222e5a285af5fc4
+2	402	7499436047326799	build.ninja	799dde890c59335e
+2	463	7499436047326799	build.ninja	799dde890c59335e
+7	8362	7499439450535000	CMakeFiles/virtual_machine.dir/virtual_machine/virtual_machine.cpp.obj	e4b381340f6e057a
+8363	13001	7499439497007647	virtual_machine.exe	222e5a285af5fc4
