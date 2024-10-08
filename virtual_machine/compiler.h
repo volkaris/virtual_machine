@@ -10,7 +10,11 @@
 #include "EvaluationValue.h"
 #include "OpCode.h"
 class compiler {
+
 public :
+    explicit compiler()
+        : co(nullptr) {
+    }
 
     CodeObject* compile (const Exp& exp) {
 
@@ -29,6 +33,7 @@ public :
                 emit(OP_CONST);
                 emit(numericConstIdx(exp.number));
                 break;
+
             case ExpType::STRING :
                 emit(OP_CONST);
                 emit(stringConstIdx(exp.string));
@@ -39,14 +44,29 @@ public :
                 /*break;*/
 
             case ExpType::BINARY_EXP :
-                throw std::exception();
-                /*break;*/
+
+                generate(*exp.left);
+                generate(*exp.right);
+
+                if (exp.op == "+") {
+                    emit(OP_ADD);
+                } else if (exp.op == "-") {
+                    emit(OP_SUB);
+                } else if (exp.op == "*") {
+                    emit(OP_MUL);
+                } else if (exp.op == "/") {
+                    emit(OP_DIV);
+                } else {
+                    throw std::runtime_error("Unknown operator in binary expression.");
+                }
+                break;
+                    /*break;*/
         }
     }
 
 private:
     size_t numericConstIdx(double value) {
-    for (auto i=0; i<co->constants.size();++i){
+    for (auto i=0; i<co->constants.size();++i) {
         if (!IS_NUMBER(co->constants[i])) {
             continue;
         }
@@ -54,13 +74,14 @@ private:
         if (AS_NUMBER(co->constants[i])==value){
             return i;
         }
+    }
         co->constants.emplace_back(NUMBER(value));
         return co->constants.size()-1;
     }
-}
+
 
         size_t stringConstIdx(const std::string& value) {
-            for (auto i=0; i<co->constants.size();++i){
+            for (auto i=0; i<co->constants.size();++i) {
                 if (!IS_STRING(co->constants[i])) {
                     continue;
                 }
@@ -68,9 +89,10 @@ private:
                 if (AS_CPP_STRING(co->constants[i])==value){
                     return i;
                 }
-                co->constants.emplace_back(ALLOC_STRING(value));
-                return co->constants.size()-1;
             }
+            co->constants.emplace_back(ALLOC_STRING(value));
+            return co->constants.size()-1;
+
 }
 
 void emit (uint8_t code) {

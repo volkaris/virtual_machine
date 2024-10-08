@@ -24,25 +24,14 @@ public:
 
         std::shared_ptr<Exp> ast = _parser->parse(program);
 
-        co=_compiler->compile(*ast.get());
-		/*constants.push_back(ALLOC_STRING("Hello"));
-		constants.push_back(ALLOC_STRING(",world!"));
-		
-		code = {
-			OP_CONST,0,
-			OP_CONST,1,
-			OP_ADD,
-			OP_HALT
-		};
+        co=_compiler->compile(*ast);
 
-		sp = stack.begin();
-		ip = &code[0];*/
 
         ip=&co->code[0];
-        sp=&stack[0];
-		/*return eval(ast);*/
+        sp=stack.begin();
 
-        return evalExp(ast);
+
+        return evalExp();
 	  }
 
     /*EvaluationValue eval() {
@@ -107,41 +96,56 @@ public:
 
 
 
-    EvaluationValue evalExp(const std::shared_ptr<Exp>& exp) {
-        switch (exp->type) {
-            case ExpType::NUMBER:
-                return NUMBER(exp->number);
+    EvaluationValue evalExp() {
+	    for (;;) {
+	        auto op_code = READ_BYTE();
+	        switch (op_code) {
+	            case OP_HALT:
+	                return pop();
 
-            case ExpType::STRING:
-                return ALLOC_STRING(exp->string);
+	            case OP_CONST:
+	                push(GET_CONST());
+	            break;
 
-            case ExpType::SYMBOL:
-                // Handle symbols if necessary
-                break;
+	            case OP_ADD: {
+	                auto right = pop();
+	                auto left = pop();
 
-            case ExpType::BINARY_EXP: {
-                auto left = evalExp(exp->left);
-                auto right = evalExp(exp->right);
+	                if (IS_NUMBER(left) && IS_NUMBER(right)) {
+	                    push(NUMBER(AS_NUMBER(left) + AS_NUMBER(right)));
+	                } else if (IS_STRING(left) && IS_STRING(right)) {
+	                    push(ALLOC_STRING(AS_CPP_STRING(left) + AS_CPP_STRING(right)));
+	                } else {
+	                    throw std::runtime_error("Type error in ADD operation.");
+	                }
+	                break;
+	            }
 
-                if (exp->op == "+") {
-                    if (IS_NUMBER(left) && IS_NUMBER(right)) {
-                        return NUMBER(AS_NUMBER(left) + AS_NUMBER(right));
-                    } else if (IS_STRING(left) && IS_STRING(right)) {
-                        return ALLOC_STRING(AS_CPP_STRING(left) + AS_CPP_STRING(right));
-                    }
-                } else if (exp->op == "-") {
-                    return NUMBER(AS_NUMBER(left) - AS_NUMBER(right));
-                } else if (exp->op == "*") {
-                    return NUMBER(AS_NUMBER(left) * AS_NUMBER(right));
-                } else if (exp->op == "/") {
-                    return NUMBER(AS_NUMBER(left) / AS_NUMBER(right));
-                }
-                throw std::runtime_error("unknown operator");
-            }
-        }
-        // Handle default case or throw an error
-        DIE << "Unknown expression type.";
-        return NUMBER(0); // Default return
+	            case OP_SUB: {
+	                auto right = pop();
+	                auto left = pop();
+	                push(NUMBER(AS_NUMBER(left) - AS_NUMBER(right)));
+	                break;
+	            }
+
+	            case OP_MUL: {
+	                auto right = pop();
+	                auto left = pop();
+	                push(NUMBER(AS_NUMBER(left) * AS_NUMBER(right)));
+	                break;
+	            }
+
+	            case OP_DIV: {
+	                auto right = pop();
+	                auto left = pop();
+	                push(NUMBER(AS_NUMBER(left) / AS_NUMBER(right)));
+	                break;
+	            }
+
+	            default:
+	                DIE << "Unknown opcode: " << std::hex << static_cast<int>(op_code);
+	        }
+	    }
     }
 
 private:
@@ -169,7 +173,7 @@ private:
 	}
 
 	EvaluationValue GET_CONST() {
-		return constants[READ_BYTE()];
+		return co->constants[READ_BYTE()];
 	}
 
 

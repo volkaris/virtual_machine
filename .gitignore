@@ -429,3 +429,6 @@ FodyWeavers.xsd
 *.exe
 *.out
 *.app
+/cmake-build-debug
+/cmake-build-debug/CMakeFiles/3.25.2
+*.json
