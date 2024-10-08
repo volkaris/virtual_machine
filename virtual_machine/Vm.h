@@ -34,68 +34,6 @@ public:
         return evalExp();
 	  }
 
-    /*EvaluationValue eval() {
-      for (;;) {
-          auto op_code = READ_BYTE();
-          switch (op_code)
-          {
-          case OP_HALT :
-              return pop();
-          case OP_CONST:
-              push(GET_CONST());
-              break;
-          case OP_ADD: {
-              decltype(auto) secondOperand = pop();
-              decltype(auto) firstOperand = pop();
-
-              if (IS_NUMBER(firstOperand) and IS_NUMBER(secondOperand)) {
-                  decltype(auto) first = AS_NUMBER(firstOperand);
-                  decltype(auto) second = AS_NUMBER(secondOperand);
-                  push(NUMBER(first + second));
-              }
-
-              if (IS_STRING(firstOperand) and IS_STRING(secondOperand)) {
-                  decltype(auto) first = AS_CPP_STRING(firstOperand);
-                  decltype(auto) second = AS_CPP_STRING(secondOperand);
-                  push(ALLOC_STRING(first + second));
-              }
-              break;
-          }
-          case OP_SUB: {
-
-              decltype(auto) secondOperand = AS_NUMBER(pop());
-              decltype(auto) firstOperand = AS_NUMBER(pop());
-
-              push(NUMBER(firstOperand - secondOperand));
-
-              break;
-          }
-          case OP_MUL: {
-
-              decltype(auto) secondOperand = AS_NUMBER(pop());
-              decltype(auto) firstOperand = AS_NUMBER(pop());
-              push(NUMBER(firstOperand * secondOperand));
-
-              break;
-          }
-          case OP_DIV: {
-
-              decltype(auto) secondOperand = AS_NUMBER(pop());
-              decltype(auto) firstOperand = AS_NUMBER(pop());
-
-              push(NUMBER(firstOperand / secondOperand));
-
-              break;
-
-
-          default:
-              DIE << "unknown code : " << std :: hex << op_code;
-          }
-      }
-  }*/
-
-
-
     EvaluationValue evalExp() {
 	    for (;;) {
 	        auto op_code = READ_BYTE();
@@ -151,7 +89,7 @@ public:
 private:
 
 	void push(const EvaluationValue& value) {
-		if ((size_t)(sp - stack.begin()) == STACK_LIMIT)
+		if (static_cast<size_t>(sp - stack.begin()) == STACK_LIMIT)
 		{
 			DIE << "push(): Stack overflow.\n";
 		}
