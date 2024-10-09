@@ -15,182 +15,164 @@ using namespace syntax;
 
 class Vm {
 public:
+    Vm() : _parser(std::make_unique<parser>()), _compiler(std::make_unique<compiler>()) {
+    }
 
-	Vm()	 : _parser(std::make_unique<parser>()) , _compiler(std::make_unique<compiler>())
-	{
-	}
-
-	EvaluationValue exec(const std::string& program) {
-
+    EvaluationValue exec(const std::string &program) {
         std::shared_ptr<Exp> ast = _parser->parse(program);
 
-        co=_compiler->compile(*ast);
+        co = _compiler->compile(*ast);
 
 
-        ip=&co->code[0];
-        sp=stack.begin();
+        ip = &co->code[0];
+        sp = stack.begin();
 
 
         return evalExp();
-	  }
+    }
 
-    /*EvaluationValue eval() {
-      for (;;) {
-          auto op_code = READ_BYTE();
-          switch (op_code)
-          {
-          case OP_HALT :
-              return pop();
-          case OP_CONST:
-              push(GET_CONST());
-              break;
-          case OP_ADD: {
-              decltype(auto) secondOperand = pop();
-              decltype(auto) firstOperand = pop();
-
-              if (IS_NUMBER(firstOperand) and IS_NUMBER(secondOperand)) {
-                  decltype(auto) first = AS_NUMBER(firstOperand);
-                  decltype(auto) second = AS_NUMBER(secondOperand);
-                  push(NUMBER(first + second));
-              }
-
-              if (IS_STRING(firstOperand) and IS_STRING(secondOperand)) {
-                  decltype(auto) first = AS_CPP_STRING(firstOperand);
-                  decltype(auto) second = AS_CPP_STRING(secondOperand);
-                  push(ALLOC_STRING(first + second));
-              }
-              break;
-          }
-          case OP_SUB: {
-
-              decltype(auto) secondOperand = AS_NUMBER(pop());
-              decltype(auto) firstOperand = AS_NUMBER(pop());
-
-              push(NUMBER(firstOperand - secondOperand));
-
-              break;
-          }
-          case OP_MUL: {
-
-              decltype(auto) secondOperand = AS_NUMBER(pop());
-              decltype(auto) firstOperand = AS_NUMBER(pop());
-              push(NUMBER(firstOperand * secondOperand));
-
-              break;
-          }
-          case OP_DIV: {
-
-              decltype(auto) secondOperand = AS_NUMBER(pop());
-              decltype(auto) firstOperand = AS_NUMBER(pop());
-
-              push(NUMBER(firstOperand / secondOperand));
-
-              break;
-
-
-          default:
-              DIE << "unknown code : " << std :: hex << op_code;
-          }
-      }
-  }*/
-
-
+    template<typename T>
+    void compare_values(const T &casted_left, const T &casted_right, uint8_t compare_op) {
+        bool res = false;
+        switch (compare_op) {
+            case 0:
+                res = casted_left < casted_right;
+                break;
+            case 1:
+                res = casted_left > casted_right;
+            break;
+            case 2:
+                res = casted_left == casted_right;
+            break;
+            case 3:
+                res = casted_left >= casted_right;
+            break;
+            case 4:
+                res = casted_left <= casted_right;
+            break;
+            case 5:
+                res = casted_left != casted_right;
+                break;
+            default: {
+                DIE << "Unknown compare operation: " << std::hex << static_cast<int>(compare_op);
+            }
+        }
+        push(BOOLEAN(res));
+    }
 
     EvaluationValue evalExp() {
-	    for (;;) {
-	        auto op_code = READ_BYTE();
-	        switch (op_code) {
-	            case OP_HALT:
-	                return pop();
+        for (;;) {
+            auto op_code = READ_BYTE();
+            switch (op_code) {
+                case OP_HALT:
+                    return pop();
 
-	            case OP_CONST:
-	                push(GET_CONST());
-	            break;
+                case OP_CONST:
+                    push(GET_CONST());
+                    break;
 
-	            case OP_ADD: {
-	                auto right = pop();
-	                auto left = pop();
+                case OP_ADD: {
+                    auto right = pop();
+                    auto left = pop();
 
-	                if (IS_NUMBER(left) && IS_NUMBER(right)) {
-	                    push(NUMBER(AS_NUMBER(left) + AS_NUMBER(right)));
-	                } else if (IS_STRING(left) && IS_STRING(right)) {
-	                    push(ALLOC_STRING(AS_CPP_STRING(left) + AS_CPP_STRING(right)));
-	                } else {
-	                    throw std::runtime_error("Type error in ADD operation.");
-	                }
-	                break;
-	            }
+                    if (IS_NUMBER(left) && IS_NUMBER(right)) {
+                        push(NUMBER(AS_NUMBER(left) + AS_NUMBER(right)));
+                    } else if (IS_STRING(left) && IS_STRING(right)) {
+                        push(ALLOC_STRING(AS_CPP_STRING(left) + AS_CPP_STRING(right)));
+                    } else {
+                        throw std::runtime_error("Type error in ADD operation.");
+                    }
+                    break;
+                }
 
-	            case OP_SUB: {
-	                auto right = pop();
-	                auto left = pop();
-	                push(NUMBER(AS_NUMBER(left) - AS_NUMBER(right)));
-	                break;
-	            }
+                case OP_SUB: {
+                    auto right = pop();
+                    auto left = pop();
+                    push(NUMBER(AS_NUMBER(left) - AS_NUMBER(right)));
+                    break;
+                }
 
-	            case OP_MUL: {
-	                auto right = pop();
-	                auto left = pop();
-	                push(NUMBER(AS_NUMBER(left) * AS_NUMBER(right)));
-	                break;
-	            }
+                case OP_MUL: {
+                    auto right = pop();
+                    auto left = pop();
+                    push(NUMBER(AS_NUMBER(left) * AS_NUMBER(right)));
+                    break;
+                }
 
-	            case OP_DIV: {
-	                auto right = pop();
-	                auto left = pop();
-	                push(NUMBER(AS_NUMBER(left) / AS_NUMBER(right)));
-	                break;
-	            }
+                case OP_DIV: {
+                    auto right = pop();
+                    auto left = pop();
+                    push(NUMBER(AS_NUMBER(left) / AS_NUMBER(right)));
+                    break;
+                }
 
-	            default:
-	                DIE << "Unknown opcode: " << std::hex << static_cast<int>(op_code);
-	        }
-	    }
+                case OP_COMPARE: {
+                    auto compareOp = READ_BYTE();
+
+                    auto right = pop();
+                    auto left = pop();
+
+                    if (IS_NUMBER(left) && IS_NUMBER(right)) {
+                        auto castedLeft = AS_NUMBER(left);
+                        auto castedRight = AS_NUMBER(right);
+                        compare_values(castedLeft, castedRight, compareOp);
+                    } else if (IS_STRING(left) && IS_STRING(right)) {
+                        auto castedLeft = AS_CPP_STRING(left);
+                        auto castedRight = AS_CPP_STRING(right);
+                        compare_values(castedLeft, castedRight, compareOp);
+                    } else {
+                        throw std::runtime_error("Type error in COMPARE operation.");
+                    }
+                    break;
+                }
+
+                default:
+                    DIE << "Unknown opcode: " << std::hex << static_cast<int>(op_code);
+            }
+        }
     }
 
 private:
-
-	void push(const EvaluationValue& value) {
-		if ((size_t)(sp - stack.begin()) == STACK_LIMIT)
-		{
-			DIE << "push(): Stack overflow.\n";
-		}
-		*sp = value;
-		sp++;
-	}
+    void push(const EvaluationValue &value) {
+        if (static_cast<size_t>(sp - stack.begin()) == STACK_LIMIT) {
+            DIE << "push(): Stack overflow.\n";
+        }
+        *sp = value;
+        sp++;
+    }
 
 
-	EvaluationValue pop() {
-		if (sp == stack.begin()) {
-			DIE << "push () : Stack empty";
-		}
-		--sp;
-		return *sp;
-	}
+    EvaluationValue pop() {
+        if (sp == stack.begin()) {
+            DIE << "push () : Stack empty";
+        }
+        --sp;
+        return *sp;
+    }
 
-	uint8_t READ_BYTE() {
-		return *ip++;
-	}
+    uint8_t READ_BYTE() {
+        return *ip++;
+    }
 
-	EvaluationValue GET_CONST() {
-		return co->constants[READ_BYTE()];
-	}
+    EvaluationValue GET_CONST() {
+        return co->constants[READ_BYTE()];
+    }
 
 
-	//Stack pointer
-	std::array<EvaluationValue, STACK_LIMIT>::iterator sp;
+    //Stack pointer
+    std::array<EvaluationValue, STACK_LIMIT>::iterator sp;
 
-	//Instruction pointer (Program counter)
-	uint8_t* ip;
+    //Instruction pointer (Program counter)
+    uint8_t *ip;
 
-	std::unique_ptr<parser> _parser;
+    std::unique_ptr<parser> _parser;
 
-	//Constant pool
-	std::vector<EvaluationValue> constants;
+    //Constant pool
+    std::vector<EvaluationValue> constants;
 
     // Code object
-    CodeObject* co;
-	
-	std::array<EvaluationValue, STACK_LIMIT>  stack;
+    CodeObject *co;
+
+    std::array<EvaluationValue, STACK_LIMIT> stack;
     std::unique_ptr<compiler> _compiler;
 };

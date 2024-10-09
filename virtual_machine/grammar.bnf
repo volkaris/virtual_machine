@@ -1,13 +1,7 @@
 /**
- * Eva grammar (S-expression).
  *
  * syntax-cli -g src/parser/EvaGrammar.bnf -m LALR1 -o src/parser/EvaParser.h
  *
- * Examples:
- *
- * Atom: 42, foo, bar, "Hello World"
- *
- * List: (), (+ 5 x), (print "hello")
  */
 
 // -----------------------------------------------
@@ -35,6 +29,14 @@
 "-"                MINUS
 "*"                MULTIPLY
 "/"                DIVIDE
+
+
+"=="               EQUALS
+"!="               NOT_EQUALS
+"<="               LESS_EQUAL
+">="               GREATER_EQUAL
+"<"                LESS
+">"                GREATER
 
 \"[^\"]*\"         STRING
 
@@ -108,9 +110,14 @@ Exp
 Expression
   : Expression PLUS Term       { $$ = std::make_shared<Exp>("+", $1, $3); }
   | Expression MINUS Term      { $$ = std::make_shared<Exp>("-", $1, $3); }
+  | Expression EQUALS Term     { $$ = std::make_shared<Exp>("==", $1, $3); }
+  | Expression NOT_EQUALS Term { $$ = std::make_shared<Exp>("!=", $1, $3); }
+  | Expression LESS Term       { $$ = std::make_shared<Exp>("<", $1, $3); }
+  | Expression GREATER Term    { $$ = std::make_shared<Exp>(">", $1, $3); }
+  | Expression LESS_EQUAL Term { $$ = std::make_shared<Exp>("<=", $1, $3); }
+  | Expression GREATER_EQUAL Term { $$ = std::make_shared<Exp>(">=", $1, $3); }
   | Term                       { $$ = $1; }
   ;
-
 Term
   : Term MULTIPLY Factor       { $$ = std::make_shared<Exp>("*", $1, $3); }
   | Term DIVIDE Factor         { $$ = std::make_shared<Exp>("/", $1, $3); }

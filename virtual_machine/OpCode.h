@@ -6,3 +6,4 @@ constexpr auto OP_ADD = 0x02;
 constexpr auto OP_SUB = 0x03;
 constexpr auto OP_MUL = 0x04;
 constexpr auto OP_DIV = 0x05;
+constexpr auto OP_COMPARE = 0x06;
