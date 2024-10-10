@@ -10,9 +10,9 @@
 #include "EvaluationValue.h"
 #include "OpCode.h"
 
-class compiler {
+class bytecodeGenerator {
 public :
-    explicit compiler ()
+    explicit bytecodeGenerator ()
         : co(nullptr) {
     }
 
@@ -208,7 +208,7 @@ private
     static std::map<std::string, uint8_t> compareOperator;
 };
 
-std::map<std::string, uint8_t> compiler::compareOperator = {
+std::map<std::string, uint8_t> bytecodeGenerator::compareOperator = {
     {"<", 0}, {">", 1}, {"==", 2}, {">=", 3}, {"<=", 4}, {"!=", 5},
 };
 

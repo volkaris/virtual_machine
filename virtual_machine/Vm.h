@@ -11,11 +11,11 @@ using namespace syntax;
 
 #include "Logger.h"
 #include "EvaluationValue.h"
-#include "compiler.h"
+#include "bytecodeGenerator.h"
 
 class Vm {
 public:
-    Vm () : _parser(std::make_unique<parser>()), _compiler(std::make_unique<compiler>()) {
+    Vm () : _parser(std::make_unique<parser>()), _compiler(std::make_unique<bytecodeGenerator>()) {
     }
 
     EvaluationValue exec (const std::string& program) {
@@ -212,5 +212,5 @@ private:
     CodeObject* co;
 
     std::array<EvaluationValue, STACK_LIMIT> stack;
-    std::unique_ptr<compiler> _compiler;
+    std::unique_ptr<bytecodeGenerator> _compiler;
 };

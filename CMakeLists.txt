@@ -11,4 +11,4 @@ add_executable(virtual_machine
         virtual_machine/Logger.h
         virtual_machine/OpCode.h
         virtual_machine/parser.h
-        virtual_machine/virtual_machine.cpp virtual_machine/compiler.h)
+        virtual_machine/virtual_machine.cpp virtual_machine/bytecodeGenerator.h)
