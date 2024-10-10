@@ -4,7 +4,8 @@
 enum class EvaluationValueType {
     NUMBER,
     BOOLEAN,
-    OBJECT
+    OBJECT,
+    NIL,
 };
 
 enum class ObjectType {
@@ -28,7 +29,7 @@ struct EvaluationValue {
         double number;
         Object* object;
     };*/
-    std::variant<bool, double, Object*> value;
+    std::variant<bool, double, Object*,std::nullptr_t> value;
 
     [[nodiscard]] bool boolean () const {
         return std::get<bool>(value);
@@ -80,6 +81,13 @@ EvaluationValue BOOLEAN (bool value) {
     return val;
 }
 
+EvaluationValue NIL() {
+    EvaluationValue val;
+    val.type = EvaluationValueType::NIL;
+    val.value=nullptr;
+    return val;
+}
+
 
 EvaluationValue ALLOC_STRING (std::string value) {
     EvaluationValue val;
@@ -117,7 +125,9 @@ CodeObject* AS_CODE (const EvaluationValue& evaValue) {
     return static_cast<CodeObject*>(evaValue.object());
 }
 
-
+bool IS_NIL(const EvaluationValue& value) {
+    return value.type == EvaluationValueType::NIL;
+}
 bool IS_NUMBER (const EvaluationValue& value) {
     return value.type == EvaluationValueType::NUMBER;
 }

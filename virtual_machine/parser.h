@@ -731,10 +731,10 @@ class parser {
   }
 
   // clang-format off
-  static constexpr size_t PRODUCTIONS_COUNT = 20;
+  static constexpr size_t PRODUCTIONS_COUNT = 21;
   static std::array<Production, PRODUCTIONS_COUNT> productions_;
 
-  static constexpr size_t ROWS_COUNT = 37;
+  static constexpr size_t ROWS_COUNT = 38;
   static std::array<Row, ROWS_COUNT> table_;
   // clang-format on
 };
@@ -977,6 +977,21 @@ PUSH_VR();
 void _handler20(yyparse& parser) {
 // Semantic action prologue.
 parser.tokensStack.pop_back();
+auto _4 = POP_V();
+auto _3 = POP_V();
+parser.tokensStack.pop_back();
+parser.tokensStack.pop_back();
+
+auto __ = std::make_shared<Exp>(ExpType::IF_EXP, _3, _4, nullptr);
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler21(yyparse& parser) {
+// Semantic action prologue.
+parser.tokensStack.pop_back();
 auto _5 = POP_V();
 auto _4 = POP_V();
 auto _3 = POP_V();
@@ -1011,7 +1026,8 @@ std::array<Production, yyparse::PRODUCTIONS_COUNT> yyparse::productions_ = {{{-1
 {3, 1, &_handler17},
 {3, 1, &_handler18},
 {3, 1, &_handler19},
-{4, 6, &_handler20}}};
+{4, 5, &_handler20},
+{4, 6, &_handler21}}};
 // clang-format on
 
 // ------------------------------------------------------------------
@@ -1053,9 +1069,10 @@ std::array<Row, yyparse::ROWS_COUNT> yyparse::table_ = {
     Row {{5, {TE::Reduce, 8}}, {6, {TE::Reduce, 8}}, {7, {TE::Reduce, 8}}, {8, {TE::Reduce, 8}}, {9, {TE::Reduce, 8}}, {10, {TE::Reduce, 8}}, {11, {TE::Reduce, 8}}, {12, {TE::Reduce, 8}}, {13, {TE::Shift, 19}}, {14, {TE::Shift, 20}}, {15, {TE::Reduce, 8}}, {16, {TE::Reduce, 8}}, {17, {TE::Reduce, 8}}, {18, {TE::Reduce, 8}}, {19, {TE::Reduce, 8}}, {21, {TE::Reduce, 8}}},
     Row {{5, {TE::Reduce, 9}}, {6, {TE::Reduce, 9}}, {7, {TE::Reduce, 9}}, {8, {TE::Reduce, 9}}, {9, {TE::Reduce, 9}}, {10, {TE::Reduce, 9}}, {11, {TE::Reduce, 9}}, {12, {TE::Reduce, 9}}, {13, {TE::Shift, 19}}, {14, {TE::Shift, 20}}, {15, {TE::Reduce, 9}}, {16, {TE::Reduce, 9}}, {17, {TE::Reduce, 9}}, {18, {TE::Reduce, 9}}, {19, {TE::Reduce, 9}}, {21, {TE::Reduce, 9}}},
     Row {{1, {TE::Transit, 34}}, {2, {TE::Transit, 3}}, {3, {TE::Transit, 4}}, {4, {TE::Transit, 5}}, {5, {TE::Shift, 10}}, {6, {TE::Shift, 11}}, {7, {TE::Shift, 12}}, {8, {TE::Shift, 13}}, {9, {TE::Shift, 14}}, {10, {TE::Shift, 15}}, {11, {TE::Shift, 16}}, {12, {TE::Shift, 17}}, {15, {TE::Shift, 6}}, {17, {TE::Shift, 7}}, {18, {TE::Shift, 8}}, {19, {TE::Shift, 9}}},
-    Row {{1, {TE::Transit, 35}}, {2, {TE::Transit, 3}}, {3, {TE::Transit, 4}}, {4, {TE::Transit, 5}}, {5, {TE::Shift, 10}}, {6, {TE::Shift, 11}}, {7, {TE::Shift, 12}}, {8, {TE::Shift, 13}}, {9, {TE::Shift, 14}}, {10, {TE::Shift, 15}}, {11, {TE::Shift, 16}}, {12, {TE::Shift, 17}}, {15, {TE::Shift, 6}}, {17, {TE::Shift, 7}}, {18, {TE::Shift, 8}}, {19, {TE::Shift, 9}}},
-    Row {{5, {TE::Shift, 10}}, {6, {TE::Shift, 11}}, {7, {TE::Shift, 12}}, {8, {TE::Shift, 13}}, {9, {TE::Shift, 14}}, {10, {TE::Shift, 15}}, {11, {TE::Shift, 16}}, {12, {TE::Shift, 17}}, {16, {TE::Shift, 36}}},
-    Row {{5, {TE::Reduce, 19}}, {6, {TE::Reduce, 19}}, {7, {TE::Reduce, 19}}, {8, {TE::Reduce, 19}}, {9, {TE::Reduce, 19}}, {10, {TE::Reduce, 19}}, {11, {TE::Reduce, 19}}, {12, {TE::Reduce, 19}}, {13, {TE::Reduce, 19}}, {14, {TE::Reduce, 19}}, {15, {TE::Reduce, 19}}, {16, {TE::Reduce, 19}}, {17, {TE::Reduce, 19}}, {18, {TE::Reduce, 19}}, {19, {TE::Reduce, 19}}, {21, {TE::Reduce, 19}}}
+    Row {{1, {TE::Transit, 36}}, {2, {TE::Transit, 3}}, {3, {TE::Transit, 4}}, {4, {TE::Transit, 5}}, {5, {TE::Shift, 10}}, {6, {TE::Shift, 11}}, {7, {TE::Shift, 12}}, {8, {TE::Shift, 13}}, {9, {TE::Shift, 14}}, {10, {TE::Shift, 15}}, {11, {TE::Shift, 16}}, {12, {TE::Shift, 17}}, {15, {TE::Shift, 6}}, {16, {TE::Shift, 35}}, {17, {TE::Shift, 7}}, {18, {TE::Shift, 8}}, {19, {TE::Shift, 9}}},
+    Row {{5, {TE::Reduce, 19}}, {6, {TE::Reduce, 19}}, {7, {TE::Reduce, 19}}, {8, {TE::Reduce, 19}}, {9, {TE::Reduce, 19}}, {10, {TE::Reduce, 19}}, {11, {TE::Reduce, 19}}, {12, {TE::Reduce, 19}}, {13, {TE::Reduce, 19}}, {14, {TE::Reduce, 19}}, {15, {TE::Reduce, 19}}, {16, {TE::Reduce, 19}}, {17, {TE::Reduce, 19}}, {18, {TE::Reduce, 19}}, {19, {TE::Reduce, 19}}, {21, {TE::Reduce, 19}}},
+    Row {{5, {TE::Shift, 10}}, {6, {TE::Shift, 11}}, {7, {TE::Shift, 12}}, {8, {TE::Shift, 13}}, {9, {TE::Shift, 14}}, {10, {TE::Shift, 15}}, {11, {TE::Shift, 16}}, {12, {TE::Shift, 17}}, {16, {TE::Shift, 37}}},
+    Row {{5, {TE::Reduce, 20}}, {6, {TE::Reduce, 20}}, {7, {TE::Reduce, 20}}, {8, {TE::Reduce, 20}}, {9, {TE::Reduce, 20}}, {10, {TE::Reduce, 20}}, {11, {TE::Reduce, 20}}, {12, {TE::Reduce, 20}}, {13, {TE::Reduce, 20}}, {14, {TE::Reduce, 20}}, {15, {TE::Reduce, 20}}, {16, {TE::Reduce, 20}}, {17, {TE::Reduce, 20}}, {18, {TE::Reduce, 20}}, {19, {TE::Reduce, 20}}, {21, {TE::Reduce, 20}}}
 };
 // clang-format on
 

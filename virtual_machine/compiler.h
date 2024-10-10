@@ -89,21 +89,42 @@ public :
 
             generate(*exp.thenBranch);
 
-        // Emit OP_JUMP to skip elseBranch
-            emit(OP_JUMP);
-            size_t jumpAddr = co->code.size();
-            emit16(0);
+           if (exp.elseBranch!=nullptr) {
+               // Emit OP_JUMP to skip elseBranch
+               emit(OP_JUMP);
+               size_t jumpAddr = co->code.size();
+               emit16(0);
 
-        // Backpatch the jumpIfFalse address to point to elseBranch
-            uint16_t elseBranchAddr = co->code.size();
-            patchAddress(jumpIfFalseAddr, elseBranchAddr);
+               // Backpatch the jumpIfFalse address to point to elseBranch
+               uint16_t elseBranchAddr = co->code.size();
+               patchAddress(jumpIfFalseAddr, elseBranchAddr);
 
-        // Generate code for elseBranch
-            generate(*exp.elseBranch);
+               // Generate code for elseBranch
+               generate(*exp.elseBranch);
 
-        // Backpatch the jump address to point after elseBranch
-            uint16_t afterElseAddr = co->code.size();
-            patchAddress(jumpAddr, afterElseAddr);
+               // Backpatch the jump address to point after elseBranch
+               uint16_t afterElseAddr = co->code.size();
+               patchAddress(jumpAddr, afterElseAddr);
+           }
+
+           else {
+               // Emit OP_JUMP to skip over OP_NIL when condition is true
+               emit(OP_JUMP);
+               size_t jumpOverNilAddr = co->code.size();
+               emit16(0);
+
+               // Backpatch the jumpIfFalse address to point to OP_NIL
+               uint16_t nilAddr = co->code.size();
+               patchAddress(jumpIfFalseAddr, nilAddr);
+
+               // Emit OP_NIL (executed when condition is false)
+               emit(OP_NIL);
+
+               // Backpatch the jump over OP_NIL to point after OP_NIL
+               uint16_t afterNilAddr = co->code.size();
+               patchAddress(jumpOverNilAddr, afterNilAddr);
+           }
+
             break;
 
         /*size_t jumpIfFalseAddr = co->code.size();

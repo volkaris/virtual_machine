@@ -144,6 +144,8 @@ Factor
   ;
 
 IfExpression
-  : L_PAREN IF Expression Expression Expression R_PAREN
+  : L_PAREN IF Expression Expression R_PAREN
+      { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $4, nullptr); }
+  | L_PAREN IF Expression Expression Expression R_PAREN
     { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $4, $5); }
   ;

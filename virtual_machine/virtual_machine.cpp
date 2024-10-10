@@ -9,7 +9,7 @@ int main () {
 
     // Test 1: If condition is false (5 > 10)
     {
-        auto result = vm.exec(R"( (if (5 > 10) 1 2) )");
+        auto result = vm.exec(R"( (if (5 > 10) 1 ) )");
         if (IS_NUMBER(result)) {
             cout << "Test 1 Result: " << AS_NUMBER(result) << " (Expected: 2)" << endl;
         }
@@ -17,6 +17,41 @@ int main () {
             cout << "Test 1: Unexpected result type." << endl;
         }
     }
+
+    {
+        auto result1 = vm.exec(R"( (if (1 == 1) 10) )");
+        auto result2 = vm.exec(R"( (if (2 == 3) 20) )");
+
+        if (IS_NUMBER(result1)) {
+            cout << "Result 1: " << AS_NUMBER(result1) << " (Expected: 10)" << endl;
+        } else if (IS_NIL(result1)) {
+            cout << "Result 1: nil (Expected: 10)" << endl;
+        } else {
+            cout << "Result 1: Unexpected result type." << endl;
+        }
+
+        if (IS_NUMBER(result2)) {
+            cout << "Result 2: " << AS_NUMBER(result2) << " (Expected: nil)" << endl;
+        } else if (IS_NIL(result2)) {
+            cout << "Result 2: nil (Expected: nil)" << endl;
+        } else {
+            cout << "Result 2: Unexpected result type." << endl;
+        }
+    }
+
+
+    // Test without else branch where condition is false
+    {
+        auto result = vm.exec(R"( (if (10 > 5) 1) )");
+        if (IS_NUMBER(result)) {
+            cout << "Test Without Else (Condition False) Result: " << AS_NUMBER(result) << " (Expected: 1)" << endl;
+        } else if (IS_NIL(result)) {
+            cout << "Test Without Else (Condition False) Result: nil (Expected: 1)" << endl;
+        } else {
+            cout << "Unexpected result type." << endl;
+        }
+    }
+
 
     // Test 2: If condition is true (10 > 5)
     {

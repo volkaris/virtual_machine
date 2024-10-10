@@ -156,6 +156,9 @@ public:
                     ip = &co->code[addr];
                     break;
                 }
+            case OP_NIL:
+                push(NIL());
+                break;
             default:
                 DIE << "Unknown opcode: " << std::hex << static_cast<int>(op_code);
             }
