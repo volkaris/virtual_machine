@@ -8,8 +8,17 @@ int main () {
     Vm vm;
 
     {
-        auto result = vm.exec(R"( (if (5 > 10) 1 2)  )");
-        cout << "Result: " << AS_NUMBER(result) << endl;
+        auto result = vm.exec(R"(
+            (if (5 > 3)
+                (if (2 > 1) 100 200)
+                (if (3 > 2) 300 400)
+            )
+        )");
+        if (IS_NUMBER(result)) {
+            cout << "Result: " << AS_NUMBER(result) << endl;  // Expected output: Result: 2
+        } else {
+            cout << "Unexpected result type." << endl;
+        }
     }
 
 

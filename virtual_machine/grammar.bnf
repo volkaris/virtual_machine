@@ -32,6 +32,10 @@
 "<"                LESS
 ">"                GREATER
 
+
+"if"               IF
+
+
 \"[^\"]*\"         STRING
 
 \d+                NUMBER
@@ -58,6 +62,7 @@ enum class ExpType {
   STRING,
   SYMBOL,
   BINARY_EXP,  // For binary expressions like 5+10
+    IF_EXP,
 };
 
 /**
@@ -74,6 +79,10 @@ struct Exp {
   std::shared_ptr<Exp> left;
   std::shared_ptr<Exp> right;
 
+        std::shared_ptr<Exp> condition;
+        std::shared_ptr<Exp> thenBranch;
+        std::shared_ptr<Exp> elseBranch;
+
   // Constructors:
   Exp(int number) : type(ExpType::NUMBER), number(number) {}
 
@@ -87,6 +96,10 @@ struct Exp {
     }
   }
 
+ Exp(ExpType expType, std::shared_ptr<Exp> condition, std::shared_ptr<Exp> thenBranch, std::shared_ptr<Exp> elseBranch)
+            : type(expType), condition(condition), thenBranch(thenBranch), elseBranch(elseBranch) {}
+
+
   Exp(const std::string& op, std::shared_ptr<Exp> left, std::shared_ptr<Exp> right)
       : type(ExpType::BINARY_EXP), op(op), left(left), right(right) {}
 };
@@ -95,10 +108,13 @@ using Value = std::shared_ptr<Exp>;
 
 %}
 
+
+%token IF
+
 %%
 
 Exp
-  : L_PAREN Expression R_PAREN { $$ = $2; }
+  : Expression { $$ = $1; }
   ;
 
 Expression
@@ -112,6 +128,7 @@ Expression
   | Expression GREATER_EQUAL Term { $$ = std::make_shared<Exp>(">=", $1, $3); }
   | Term                       { $$ = $1; }
   ;
+
 Term
   : Term MULTIPLY Factor       { $$ = std::make_shared<Exp>("*", $1, $3); }
   | Term DIVIDE Factor         { $$ = std::make_shared<Exp>("/", $1, $3); }
@@ -119,8 +136,14 @@ Term
   ;
 
 Factor
-  : L_PAREN Expression R_PAREN { $$ = $2; }
+  : IfExpression               { $$ = $1; }
+  | L_PAREN Expression R_PAREN { $$ = $2; }
   | NUMBER                     { $$ = std::make_shared<Exp>(std::stoi($1)); }
   | STRING                     { $$ = std::make_shared<Exp>($1); }
   | SYMBOL                     { $$ = std::make_shared<Exp>($1); }
+  ;
+
+IfExpression
+  : L_PAREN IF Expression Expression Expression R_PAREN
+    { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $4, $5); }
   ;

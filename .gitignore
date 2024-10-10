@@ -434,3 +434,5 @@ FodyWeavers.xsd
 *.json
 /cmake-build-debug/
 /cmake-build-debug
+*.ninja
+/cmake-build-debug
