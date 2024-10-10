@@ -12,11 +12,11 @@
 
 class compiler {
 public :
-    explicit compiler()
+    explicit compiler ()
         : co(nullptr) {
     }
 
-    CodeObject *compile(const Exp &exp) {
+    CodeObject* compile (const Exp& exp) {
         co = AS_CODE(ALLOC_CODE("main"));
 
         generate(exp);
@@ -26,57 +26,63 @@ public :
         return co;
     }
 
-    void generate(const Exp &exp) {
+    void generate (const Exp& exp) {
         switch (exp.type) {
-            case ExpType::NUMBER:
+        case ExpType::NUMBER:
+            emit(OP_CONST);
+            emit(numericConstIdx(exp.number));
+            break;
+
+        case ExpType::STRING:
+            emit(OP_CONST);
+            emit(stringConstIdx(exp.string));
+            break;
+
+        case ExpType::SYMBOL:
+            if (exp.symbol == "true" or exp.symbol == "false") {
                 emit(OP_CONST);
-                emit(numericConstIdx(exp.number));
+                emit(booleanConstIdx(exp.symbol == "true") ? true : false);
                 break;
-
-            case ExpType::STRING:
-                emit(OP_CONST);
-                emit(stringConstIdx(exp.string));
-                break;
-
-            case ExpType::SYMBOL:
-                if (exp.symbol == "true" or exp.symbol == "false") {
-                    emit(OP_CONST);
-                    emit(booleanConstIdx(exp.symbol == "true") ? true : false);
-                    break;
-                } else {
-                    //variables
-                    throw std::runtime_error("unknown symbol");
-                }
+            }
+            else {
+                //variables
+                throw std::runtime_error("unknown symbol");
+            }
 
 
-            case ExpType::BINARY_EXP:
+        case ExpType::BINARY_EXP:
 
-                generate(*exp.left);
-                generate(*exp.right);
+            generate(*exp.left);
+            generate(*exp.right);
 
-                if (exp.op == "+") {
-                    emit(OP_ADD);
-                } else if (exp.op == "-") {
-                    emit(OP_SUB);
-                } else if (exp.op == "*") {
-                    emit(OP_MUL);
-                } else if (exp.op == "/") {
-                    emit(OP_DIV);
-                } else if (compareOperator.count(exp.op) != 0) {
-                    emit(OP_COMPARE);
-                    emit(compareOperator[exp.op]);
 
-                } else {
-                    throw std::runtime_error("Unknown operator in binary expression.");
-                }
-                break;
-            /*break;*/
+            if (exp.op == "+") {
+                emit(OP_ADD);
+            }
+            else if (exp.op == "-") {
+                emit(OP_SUB);
+            }
+            else if (exp.op == "*") {
+                emit(OP_MUL);
+            }
+            else if (exp.op == "/") {
+                emit(OP_DIV);
+            }
+            else if (compareOperator.count(exp.op) != 0) {
+                emit(OP_COMPARE);
+                emit(compareOperator[exp.op]);
+            }
+            else {
+                throw std::runtime_error("Unknown operator in binary expression.");
+            }
+            break;
+        /*break;*/
         }
     }
 
 private
 :
-    size_t numericConstIdx(double value) {
+    size_t numericConstIdx (double value) {
         for (auto i = 0; i < co->constants.size(); ++i) {
             if (!IS_NUMBER(co->constants[i])) {
                 continue;
@@ -90,7 +96,7 @@ private
         return co->constants.size() - 1;
     }
 
-    size_t booleanConstIdx(bool value) {
+    size_t booleanConstIdx (bool value) {
         for (auto i = 0; i < co->constants.size(); ++i) {
             if (!IS_BOOLEAN(co->constants[i])) {
                 continue;
@@ -104,7 +110,7 @@ private
         return co->constants.size() - 1;
     }
 
-    size_t stringConstIdx(const std::string &value) {
+    size_t stringConstIdx (const std::string& value) {
         for (auto i = 0; i < co->constants.size(); ++i) {
             if (!IS_STRING(co->constants[i])) {
                 continue;
@@ -118,12 +124,12 @@ private
         return co->constants.size() - 1;
     }
 
-    void emit(uint8_t code) {
+    void emit (uint8_t code) {
         co->code.emplace_back(code);
     }
 
     // compiling code object
-    CodeObject *co;
+    CodeObject* co;
 
     static std::map<std::string, uint8_t> compareOperator;
 };

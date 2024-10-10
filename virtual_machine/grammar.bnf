@@ -1,6 +1,6 @@
 /**
  *
- * syntax-cli -g src/parser/EvaGrammar.bnf -m LALR1 -o src/parser/EvaParser.h
+ * syntax-cli -g src/parser/grammar.bnf -m LALR1 -o parser.h
  *
  */
 
@@ -15,12 +15,6 @@
 \/\*[\s\S]*?\*\/   %empty
 
 \s+                %empty
-
-/*\"[^\"]*\"         STRING
-
-\d+                NUMBER
-
-[\w\-+*=!<>/]+     SYMBOL*/
 
 "("                L_PAREN
 ")"                R_PAREN

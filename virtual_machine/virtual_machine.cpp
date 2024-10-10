@@ -2,10 +2,16 @@
 #include "Vm.h"
 
 using namespace std;
- 
 
-int main() {
+
+int main () {
     Vm vm;
+
+    {
+        auto result = vm.exec(R"( (if (5 > 10) 1 2)  )");
+        cout << "Result: " << AS_NUMBER(result) << endl;
+    }
+
 
     {
         auto result = vm.exec("( false )");
@@ -15,12 +21,13 @@ int main() {
         std::cout << "---------------------------" << std::endl;
     }
 
-  // Test greater than (>)
+    // Test greater than (>)
     {
         auto result = vm.exec("(5 > 3)");
         if (IS_BOOLEAN(result)) {
             std::cout << "5 > 3: " << (AS_BOOLEAN(result) ? "true" : "false") << std::endl;
-        } else {
+        }
+        else {
             std::cout << "5 > 3: Error - Result is not a boolean." << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -31,7 +38,8 @@ int main() {
         auto result = vm.exec("(2 < 4)");
         if (IS_BOOLEAN(result)) {
             std::cout << "2 < 4: " << (AS_BOOLEAN(result) ? "true" : "false") << std::endl;
-        } else {
+        }
+        else {
             std::cout << "2 < 4: Error - Result is not a boolean." << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -42,7 +50,8 @@ int main() {
         auto result = vm.exec("(5 == 5)");
         if (IS_BOOLEAN(result)) {
             std::cout << "5 == 5: " << (AS_BOOLEAN(result) ? "true" : "false") << std::endl;
-        } else {
+        }
+        else {
             std::cout << "5 == 5: Error - Result is not a boolean." << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -53,7 +62,8 @@ int main() {
         auto result = vm.exec("(5 >= 5)");
         if (IS_BOOLEAN(result)) {
             std::cout << "5 >= 5: " << (AS_BOOLEAN(result) ? "true" : "false") << std::endl;
-        } else {
+        }
+        else {
             std::cout << "5 >= 5: Error - Result is not a boolean." << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -64,7 +74,8 @@ int main() {
         auto result = vm.exec("(3 <= 5)");
         if (IS_BOOLEAN(result)) {
             std::cout << "3 <= 5: " << (AS_BOOLEAN(result) ? "true" : "false") << std::endl;
-        } else {
+        }
+        else {
             std::cout << "3 <= 5: Error - Result is not a boolean." << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -75,7 +86,8 @@ int main() {
         auto result = vm.exec("(5 != 3)");
         if (IS_BOOLEAN(result)) {
             std::cout << "5 != 3: " << (AS_BOOLEAN(result) ? "true" : "false") << std::endl;
-        } else {
+        }
+        else {
             std::cout << "5 != 3: Error - Result is not a boolean." << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -86,13 +98,12 @@ int main() {
         auto result = vm.exec("(5 < 3)");
         if (IS_BOOLEAN(result)) {
             std::cout << "5 < 3: " << (AS_BOOLEAN(result) ? "true" : "false") << std::endl;
-        } else {
+        }
+        else {
             std::cout << "5 < 3: Error - Result is not a boolean." << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
     }
-
-    
 
 
     // Test 1: Simple Addition
@@ -101,7 +112,8 @@ int main() {
         auto result = vm.exec("(5 + 10)");
         if (IS_NUMBER(result)) {
             std::cout << "Result: " << AS_NUMBER(result) << " (Expected: 15)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: Number)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -113,7 +125,8 @@ int main() {
         auto result = vm.exec("(5 * 10)");
         if (IS_NUMBER(result)) {
             std::cout << "Result: " << AS_NUMBER(result) << " (Expected: 50)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: Number)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -125,7 +138,8 @@ int main() {
         auto result = vm.exec("((5 + 10) * 2)");
         if (IS_NUMBER(result)) {
             std::cout << "Result: " << AS_NUMBER(result) << " (Expected: 30)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: Number)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -137,7 +151,8 @@ int main() {
         auto result = vm.exec("(\"Hello\" + \" World\")");
         if (IS_STRING(result)) {
             std::cout << "Result: " << AS_CPP_STRING(result) << " (Expected: Hello World)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: String)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -149,7 +164,8 @@ int main() {
         auto result = vm.exec("(20 / 4)");
         if (IS_NUMBER(result)) {
             std::cout << "Result: " << AS_NUMBER(result) << " (Expected: 5)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: Number)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -161,7 +177,8 @@ int main() {
         auto result = vm.exec("((5 + (3 * 2)) / 2)");
         if (IS_NUMBER(result)) {
             std::cout << "Result: " << AS_NUMBER(result) << " (Expected: 5.5)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: Number)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -175,12 +192,15 @@ int main() {
             // If no exception, print the result
             if (IS_STRING(result)) {
                 std::cout << "Result: " << AS_CPP_STRING(result) << " (Expected: Type Error)" << std::endl;
-            } else if (IS_NUMBER(result)) {
+            }
+            else if (IS_NUMBER(result)) {
                 std::cout << "Result: " << AS_NUMBER(result) << " (Expected: Type Error)" << std::endl;
-            } else {
+            }
+            else {
                 std::cout << "Result Type: Unknown (Expected: Type Error)" << std::endl;
             }
-        } catch (const std::exception& e) {
+        }
+        catch (const std::exception& e) {
             std::cout << "Caught Exception: " << e.what() << " (Expected: Type Error)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -213,10 +233,12 @@ int main() {
             // If no exception, print the result
             if (IS_NUMBER(result)) {
                 std::cout << "Result: " << AS_NUMBER(result) << " (Expected: Error)" << std::endl;
-            } else {
+            }
+            else {
                 std::cout << "Result Type: Unknown (Expected: Error)" << std::endl;
             }
-        } catch (const std::exception& e) {
+        }
+        catch (const std::exception& e) {
             std::cout << "Caught Exception: " << e.what() << " (Expected: Division by Zero Error)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -245,7 +267,8 @@ int main() {
         auto result = vm.exec("(1000000 + 2000000)");
         if (IS_NUMBER(result)) {
             std::cout << "Result: " << AS_NUMBER(result) << " (Expected: 3000000)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: Number)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -257,7 +280,8 @@ int main() {
         auto result = vm.exec("((5 + 10) - 3)");
         if (IS_NUMBER(result)) {
             std::cout << "Result: " << AS_NUMBER(result) << " (Expected: 12)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: Number)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -288,7 +312,8 @@ int main() {
         auto result = vm.exec("((5 + 10) * (2 + 3))");
         if (IS_NUMBER(result)) {
             std::cout << "Result: " << AS_NUMBER(result) << " (Expected: 75)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: Number)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;
@@ -300,7 +325,8 @@ int main() {
         auto result = vm.exec("(((1 + 2) + 3) + 4)");
         if (IS_NUMBER(result)) {
             std::cout << "Result: " << AS_NUMBER(result) << " (Expected: 10)" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Result Type: Unknown (Expected: Number)" << std::endl;
         }
         std::cout << "---------------------------" << std::endl;

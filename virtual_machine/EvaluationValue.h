@@ -2,26 +2,25 @@
 #include <variant>
 
 enum class EvaluationValueType {
-	NUMBER,
-	BOOLEAN,
-	OBJECT
+    NUMBER,
+    BOOLEAN,
+    OBJECT
 };
 
 enum class ObjectType {
-	STRING,
+    STRING,
     CODE,
 };
 
 struct Object {
-	Object(ObjectType type)	 
-	{
-		this->type = type;
-	} 
-	ObjectType type;
+    Object (ObjectType type) {
+        this->type = type;
+    }
+
+    ObjectType type;
 };
 
-struct EvaluationValue
-{
+struct EvaluationValue {
     EvaluationValueType type;
     /*union
     {
@@ -29,24 +28,32 @@ struct EvaluationValue
         double number;
         Object* object;
     };*/
-	std::variant<bool,double,Object*> value;
-	[[nodiscard]] bool boolean() const { return std::get<bool>(value); }
-	[[nodiscard]] double number() const { return std::get<double>(value); }
-	[[nodiscard]] Object* object() const { return std::get<Object*>(value); }
+    std::variant<bool, double, Object*> value;
+
+    [[nodiscard]] bool boolean () const {
+        return std::get<bool>(value);
+    }
+
+    [[nodiscard]] double number () const {
+        return std::get<double>(value);
+    }
+
+    [[nodiscard]] Object* object () const {
+        return std::get<Object*>(value);
+    }
 };
 
-struct StringObject : public Object {
-	StringObject(const std::string& str) : Object(ObjectType::STRING)
-	{
-		this->string = str;
-	}
-	std::string string;
- };
+struct StringObject : Object {
+    StringObject (const std::string& str) : Object(ObjectType::STRING) {
+        this->string = str;
+    }
+
+    std::string string;
+};
 
 struct CodeObject : public Object {
-
-
-    CodeObject(const std::string &name) :  name(name), Object(ObjectType::CODE) {}
+    CodeObject (const std::string& name) : name(name), Object(ObjectType::CODE) {
+    }
 
     //name of unit (most of the cases for function name)
     std::string name;
@@ -59,81 +66,78 @@ struct CodeObject : public Object {
 };
 
 
-EvaluationValue NUMBER(double value) {
-	EvaluationValue val;
+EvaluationValue NUMBER (double value) {
+    EvaluationValue val;
     val.type = EvaluationValueType::NUMBER;
     val.value = value;
-	return val;
-}
-
-EvaluationValue BOOLEAN(bool value) {
-	EvaluationValue val;
-	val.type = EvaluationValueType::BOOLEAN;
-	val.value = value;
-	return val;
-}
-
-
-EvaluationValue ALLOC_STRING(std::string value) {
-	EvaluationValue val;
-    val.type = EvaluationValueType::OBJECT;
-    val.value = static_cast<Object *>(new StringObject(value));
-	return val;
-}
-
-
-EvaluationValue ALLOC_CODE(std::string value) {
-    EvaluationValue val;
-    val.type = EvaluationValueType::OBJECT;
-   val.value = static_cast<Object *>(new CodeObject(value));
     return val;
 }
 
-double AS_NUMBER(const EvaluationValue& value) {
-	return  value.number();
-}
-
-StringObject* AS_STRING(const EvaluationValue& value) {
-	return  static_cast<StringObject*>(value.object());
-	
-}
-
-bool AS_BOOLEAN(const EvaluationValue& value) {
-	return  value.boolean();
-
+EvaluationValue BOOLEAN (bool value) {
+    EvaluationValue val;
+    val.type = EvaluationValueType::BOOLEAN;
+    val.value = value;
+    return val;
 }
 
 
-std::string AS_CPP_STRING(const EvaluationValue& evaValue) {
-	return  AS_STRING(evaValue)->string;
+EvaluationValue ALLOC_STRING (std::string value) {
+    EvaluationValue val;
+    val.type = EvaluationValueType::OBJECT;
+    val.value = static_cast<Object*>(new StringObject(value));
+    return val;
 }
 
-CodeObject* AS_CODE(const EvaluationValue& evaValue) {
-    return  static_cast<CodeObject*>(evaValue.object());
 
+EvaluationValue ALLOC_CODE (std::string value) {
+    EvaluationValue val;
+    val.type = EvaluationValueType::OBJECT;
+    val.value = static_cast<Object*>(new CodeObject(value));
+    return val;
+}
+
+double AS_NUMBER (const EvaluationValue& value) {
+    return value.number();
+}
+
+StringObject* AS_STRING (const EvaluationValue& value) {
+    return static_cast<StringObject*>(value.object());
+}
+
+bool AS_BOOLEAN (const EvaluationValue& value) {
+    return value.boolean();
 }
 
 
-bool IS_NUMBER(const EvaluationValue& value) {
-    return value.type == EvaluationValueType::NUMBER  ;
+std::string AS_CPP_STRING (const EvaluationValue& evaValue) {
+    return AS_STRING(evaValue)->string;
 }
 
-bool IS_BOOLEAN(const EvaluationValue& value) {
-	return value.type == EvaluationValueType::BOOLEAN  ;
+CodeObject* AS_CODE (const EvaluationValue& evaValue) {
+    return static_cast<CodeObject*>(evaValue.object());
 }
 
-bool IS_OBJECT(const EvaluationValue& value) {
-	return value.type == EvaluationValueType::OBJECT;
+
+bool IS_NUMBER (const EvaluationValue& value) {
+    return value.type == EvaluationValueType::NUMBER;
 }
 
-bool IS_OBJECT_TYPE(const EvaluationValue& value, const ObjectType& objectType) {
-	return IS_OBJECT(value) and value.object()->type == objectType ;
+bool IS_BOOLEAN (const EvaluationValue& value) {
+    return value.type == EvaluationValueType::BOOLEAN;
 }
 
-bool IS_STRING(const EvaluationValue& value) {
-	return  IS_OBJECT_TYPE(value, ObjectType::STRING);
+bool IS_OBJECT (const EvaluationValue& value) {
+    return value.type == EvaluationValueType::OBJECT;
 }
 
-bool IS_CODE(const EvaluationValue& value) {
-    return IS_OBJECT_TYPE(value, ObjectType::CODE) ;
+bool IS_OBJECT_TYPE (const EvaluationValue& value, const ObjectType& objectType) {
+    return IS_OBJECT(value) and value.object()->type == objectType;
+}
+
+bool IS_STRING (const EvaluationValue& value) {
+    return IS_OBJECT_TYPE(value, ObjectType::STRING);
+}
+
+bool IS_CODE (const EvaluationValue& value) {
+    return IS_OBJECT_TYPE(value, ObjectType::CODE);
 }
