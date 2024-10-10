@@ -1,9 +1,7 @@
 //
 // Created by Ilya on 06.10.2024.
 //
-
-#ifndef VIRTUAL_MACHINE_COMPILER_H
-#define VIRTUAL_MACHINE_COMPILER_H
+#pragma once
 
 
 #include "parser.h"
@@ -126,21 +124,6 @@ public :
            }
 
             break;
-
-        /*size_t jumpIfFalseAddr = co->code.size();
-
-        emit(0);
-        emit(0);
-
-        // Generate code for thenBranch
-        generate(*exp.thenBranch);
-
-        emit(OP_JUMP);
-
-        auto jumpIf=co->code.size();
-
-        emit(0);
-        emit(0);*/
         }
     }
 
@@ -212,4 +195,4 @@ std::map<std::string, uint8_t> bytecodeGenerator::compareOperator = {
     {"<", 0}, {">", 1}, {"==", 2}, {">=", 3}, {"<=", 4}, {"!=", 5},
 };
 
-#endif //VIRTUAL_MACHINE_COMPILER_H
+
