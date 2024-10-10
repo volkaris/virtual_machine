@@ -7,6 +7,29 @@ using namespace std;
 int main () {
     Vm vm;
 
+    // Test 1: If condition is false (5 > 10)
+    {
+        auto result = vm.exec(R"( (if (5 > 10) 1 2) )");
+        if (IS_NUMBER(result)) {
+            cout << "Test 1 Result: " << AS_NUMBER(result) << " (Expected: 2)" << endl;
+        }
+        else {
+            cout << "Test 1: Unexpected result type." << endl;
+        }
+    }
+
+    // Test 2: If condition is true (10 > 5)
+    {
+        auto result = vm.exec(R"( (if (10 > 5) 1 2) )");
+        if (IS_NUMBER(result)) {
+            cout << "Test 2 Result: " << AS_NUMBER(result) << " (Expected: 1)" << endl;
+        }
+        else {
+            cout << "Test 2: Unexpected result type." << endl;
+        }
+    }
+
+    // Test 3: Nested if expressions
     {
         auto result = vm.exec(R"(
             (if (5 > 3)
@@ -15,8 +38,97 @@ int main () {
             )
         )");
         if (IS_NUMBER(result)) {
-            cout << "Result: " << AS_NUMBER(result) << endl;  // Expected output: Result: 2
-        } else {
+            cout << "Test 3 Result: " << AS_NUMBER(result) << " (Expected: 100)" << endl;
+        }
+        else {
+            cout << "Test 3: Unexpected result type." << endl;
+        }
+    }
+
+    // Test 4: Multiple if expressions in sequence
+    {
+        auto result1 = vm.exec(R"( (if (1 == 1) 10 20) )");
+        auto result2 = vm.exec(R"( (if (2 == 3) 30 40) )");
+
+        if (IS_NUMBER(result1) && IS_NUMBER(result2)) {
+            cout << "Test 4 Result 1: " << AS_NUMBER(result1) << " (Expected: 10)" << endl;
+            cout << "Test 4 Result 2: " << AS_NUMBER(result2) << " (Expected: 40)" << endl;
+        }
+        else {
+            cout << "Test 4: Unexpected result types." << endl;
+        }
+    }
+
+    // Test 5: Complex expressions in condition and branches
+    {
+        auto result = vm.exec(R"(
+            (if ((5 + 5) == (2 * 5))
+                (10 * 10)
+                (20 * 20)
+            )
+        )");
+        if (IS_NUMBER(result)) {
+            cout << "Test 5 Result: " << AS_NUMBER(result) << " (Expected: 100)" << endl;
+        }
+        else {
+            cout << "Test 5: Unexpected result type." << endl;
+        }
+    }
+
+    // Test 6: If with boolean literals
+    {
+        auto result = vm.exec(R"( (if true 1 2) )");
+        if (IS_NUMBER(result)) {
+            cout << "Test 6 Result: " << AS_NUMBER(result) << " (Expected: 1)" << endl;
+        }
+        else {
+            cout << "Test 6: Unexpected result type." << endl;
+        }
+    }
+
+    // Test 7: If with string comparison
+    {
+        auto result = vm.exec(R"( (if ("hello" == "hello") "yes" "no") )");
+        if (IS_STRING(result)) {
+            cout << "Test 7 Result: " << AS_CPP_STRING(result) << " (Expected: yes)" << endl;
+        }
+        else {
+            cout << "Test 7: Unexpected result type." << endl;
+        }
+    }
+
+    // Test 8: Chain of if expressions
+    {
+        auto result = vm.exec(R"(
+            (if (false)
+                1
+                (if (false)
+                    2
+                    (if (true)
+                        3
+                        4
+                    )
+                )
+            )
+        )");
+        if (IS_NUMBER(result)) {
+            cout << "Test 8 Result: " << AS_NUMBER(result) << " (Expected: 3)" << endl;
+        }
+        else {
+            cout << "Test 8: Unexpected result type." << endl;
+        }
+    }
+    {
+        auto result = vm.exec(R"(
+            (if (5 > 3)
+                (if (2 > 1) 100 200)
+                (if (3 > 2) 300 400)
+            )
+        )");
+        if (IS_NUMBER(result)) {
+            cout << "Result: " << AS_NUMBER(result) << endl; // Expected output: Result: 2
+        }
+        else {
             cout << "Unexpected result type." << endl;
         }
     }
