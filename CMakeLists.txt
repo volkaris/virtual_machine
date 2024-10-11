@@ -30,7 +30,7 @@ FetchContent_MakeAvailable(googletest)
 # It's better to separate headers and sources, but for simplicity, we'll list all files
 add_library(vm_lib STATIC
         virtual_machine/EvaluationValue.h
-        virtual_machine/Vm.h
+        virtual_machine/vm.h
         virtual_machine/Logger.h
         virtual_machine/OpCode.h
         virtual_machine/parser.h
