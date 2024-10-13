@@ -15,6 +15,13 @@ constexpr auto OP_COMPARE = 0x06;
 constexpr auto OP_JUMP_IF_FALSE = 0x07;
 constexpr auto OP_JUMP = 0x08;
 
+constexpr auto OP_GET_GLOBAL = 0x09;
+constexpr auto OP_SET_GLOBAL = 0x10;
+
+// i love kostili!
+constexpr auto OP_NIL = 0x20;
+
+
 
 #define OP_STR(op) \
     case OP_##op:  \
@@ -38,5 +45,5 @@ std::string opcodeToString(uint8_t opcode) {
 }
 
 
-// i love kostili!
-constexpr auto OP_NIL = 0x20;
+
+

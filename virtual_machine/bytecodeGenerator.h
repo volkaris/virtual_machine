@@ -7,17 +7,15 @@
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "OpCode.h"
+#include "Global.h"
 #include "disassembler/Disassembler.h"
+
+
 
 class bytecodeGenerator {
 public :
-
-    bytecodeGenerator()
-    : disassembler(std::make_unique<Disassembler>()){}
-
-//    explicit bytecodeGenerator ()
-//        : co(nullptr) {
-//    }
+    explicit bytecodeGenerator (std::shared_ptr<Global> global)
+        : co(nullptr), global(global), disassembler(std::make_unique<Disassembler>()){}
 
     CodeObject* compile (const Exp& exp) {
         co = AS_CODE(ALLOC_CODE("main"));
@@ -49,8 +47,16 @@ public :
             }
             else {
                 //variables
+                if (!global->exists(exp.string)) {
+                    DIE << "[ByteCodeGenerator]: Reference error: " << exp.string;
+                }
+                emit(OP_GET_GLOBAL);
+                emit(global->getGlobalIndex(exp.string));
+
                 throw std::runtime_error("unknown symbol");
             }
+            //мб уберём throw
+            break;
 
 
         case ExpType::BINARY_EXP:
@@ -133,9 +139,16 @@ public :
     }
 
     void disassembleBytecode() { disassembler->disassemble(co); }
-private
-:
+    
+private:
+    //Global object
+    std::shared_ptr<Global> global;
+    
     std::unique_ptr<Disassembler> disassembler;
+    
+    // compiling code object
+    CodeObject* co;
+
     size_t getOffset() { return co->code.size(); }
 
     size_t numericConstIdx (double value) {
@@ -193,9 +206,6 @@ private
         co->code[addrPos] = (value >> 8) & 0xFF;
         co->code[addrPos + 1] = value & 0xFF;
     }
-
-    // compiling code object
-    CodeObject* co;
 
     static std::map<std::string, uint8_t> compareOperator;
 };

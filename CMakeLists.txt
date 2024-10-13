@@ -36,7 +36,7 @@ add_library(vm_lib STATIC
         virtual_machine/parser.h
         virtual_machine/virtual_machine.cpp
         virtual_machine/bytecodeGenerator.h
-)
+        virtual_machine/Global.h)
 
 # Optionally, specify include directories for the library (if not using include_directories globally)
 # target_include_directories(vm_lib PUBLIC ${PROJECT_SOURCE_DIR}/virtual_machine)
