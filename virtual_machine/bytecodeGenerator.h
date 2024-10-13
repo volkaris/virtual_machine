@@ -7,11 +7,12 @@
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "OpCode.h"
+#include "Global.h"
 
 class bytecodeGenerator {
 public :
-    explicit bytecodeGenerator ()
-        : co(nullptr) {
+    explicit bytecodeGenerator (std::shared_ptr<Global> global)
+        : co(nullptr), global(global) {
     }
 
     CodeObject* compile (const Exp& exp) {
@@ -44,8 +45,16 @@ public :
             }
             else {
                 //variables
+                if (!global->exists(exp.string)) {
+                    DIE << "[ByteCodeGenerator]: Reference error: " << exp.string;
+                }
+                emit(OP_GET_GLOBAL);
+                emit(global->getGlobalIndex(exp.string));
+
                 throw std::runtime_error("unknown symbol");
             }
+            //мб уберём throw
+            break;
 
 
         case ExpType::BINARY_EXP:
@@ -127,8 +136,14 @@ public :
         }
     }
 
-private
-:
+private:
+
+    //Global object
+    std::shared_ptr<Global> global;
+
+    // compiling code object
+    CodeObject* co;
+
     size_t numericConstIdx (double value) {
         for (auto i = 0; i < co->constants.size(); ++i) {
             if (!IS_NUMBER(co->constants[i])) {
@@ -184,9 +199,6 @@ private
         co->code[addrPos] = (value >> 8) & 0xFF;
         co->code[addrPos + 1] = value & 0xFF;
     }
-
-    // compiling code object
-    CodeObject* co;
 
     static std::map<std::string, uint8_t> compareOperator;
 };

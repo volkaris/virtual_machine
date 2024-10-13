@@ -12,8 +12,8 @@ constexpr auto OP_COMPARE = 0x06;
 constexpr auto OP_JUMP_IF_FALSE = 0x07;
 constexpr auto OP_JUMP = 0x08;
 
-
-
+constexpr auto OP_GET_GLOBAL = 0x09;
+constexpr auto OP_SET_GLOBAL = 0x10;
 
 
 // i love kostili!

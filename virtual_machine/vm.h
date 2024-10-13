@@ -12,10 +12,15 @@ using namespace syntax;
 #include "Logger.h"
 #include "EvaluationValue.h"
 #include "bytecodeGenerator.h"
+#include "Global.h"
 
 class vm {
 public:
-    vm() : _parser(std::make_unique<parser>()), _bytecodeGenerator(std::make_unique<bytecodeGenerator>()) {
+    vm() :
+    global(std::make_shared<Global>()),
+    _parser(std::make_unique<parser>()),
+    _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {
+        setGlobalVariables();
     }
 
     EvaluationValue exec(const std::string &program) {
@@ -149,6 +154,13 @@ public:
                     ip = &co->code[addr];
                     break;
                 }
+
+                case OP_GET_GLOBAL: {
+                    auto globalIndex = READ_BYTE();
+                    push(global->get(globalIndex).value);
+                    break;
+                }
+
                 case OP_NIL:
                     push(NIL());
                     break;
@@ -159,6 +171,13 @@ public:
     }
 
 private:
+
+
+    void setGlobalVariables() {
+        global->addConst("x", 10);
+        global->addConst("y", 20);
+    }
+
     void push(const EvaluationValue &value) {
         if (static_cast<size_t>(sp - stack.begin()) == STACK_LIMIT) {
             DIE << "push(): Stack overflow.\n";
@@ -189,6 +208,8 @@ private:
         return co->constants[READ_BYTE()];
     }
 
+    //Global object
+    std::shared_ptr<Global> global;
 
     //Stack pointer
     std::array<EvaluationValue, STACK_LIMIT>::iterator sp;
