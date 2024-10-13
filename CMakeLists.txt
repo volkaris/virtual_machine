@@ -53,6 +53,7 @@ target_link_libraries(virtual_machine PRIVATE vm_lib)
 # It's better to specify test files explicitly for clarity and to avoid unexpected issues
 set(TEST_SOURCES
         tests/tests.cpp
+        virtual_machine/disassembler/Disassembler.h
         # Add other test source files here
 )
 
