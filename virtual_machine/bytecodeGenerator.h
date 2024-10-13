@@ -7,12 +7,17 @@
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "OpCode.h"
+#include "disassembler/Disassembler.h"
 
 class bytecodeGenerator {
 public :
-    explicit bytecodeGenerator ()
-        : co(nullptr) {
-    }
+
+    bytecodeGenerator()
+    : disassembler(std::make_unique<Disassembler>()){}
+
+//    explicit bytecodeGenerator ()
+//        : co(nullptr) {
+//    }
 
     CodeObject* compile (const Exp& exp) {
         co = AS_CODE(ALLOC_CODE("main"));
@@ -127,8 +132,12 @@ public :
         }
     }
 
+    void disassembleBytecode() { disassembler->disassemble(co); }
 private
 :
+    std::unique_ptr<Disassembler> disassembler;
+    size_t getOffset() { return co->code.size(); }
+
     size_t numericConstIdx (double value) {
         for (auto i = 0; i < co->constants.size(); ++i) {
             if (!IS_NUMBER(co->constants[i])) {

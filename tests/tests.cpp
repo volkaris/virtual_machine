@@ -206,3 +206,33 @@ TEST_F(VmTest, DeeplyNestedExpressions) {
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
     EXPECT_EQ(AS_NUMBER(result), 10) << "Expected result to be 10.";
 }
+
+// Test 22: Deconstruct Program By Assembler
+TEST_F(VmTest, DeconstructProgramByAssem) {
+    auto result = _vm->exec(R"(
+        10
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 10) << "Expected result to be 10.";
+}
+
+// Test 23: Deconstruct Program Sum By Assembler
+TEST_F(VmTest, DeconstructSum) {
+    auto result = _vm->exec(R"(
+        (5 + 2)
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 7) << "Expected result to be 7.";
+}
+
+// Test 24: Deconstruct Program Difference By Assembler
+TEST_F(VmTest, DeconstructDifference) {
+    auto result = _vm->exec(R"(
+        (if (5 > 10) 1 2)
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 2) << "Expected result to be 2.";
+}

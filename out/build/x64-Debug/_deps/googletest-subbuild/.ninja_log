@@ -1,0 +1,21 @@
+# ninja log v5
+2174	2222	7505297978861755	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-build	ab84a93e3fa64505
+1	56	7505297957204882	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-mkdir	f1615bdb53e8ec7d
+2009	2057	7505297977215283	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-update	11910231a3f1358b
+1	56	7505297957204882	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-mkdir	f1615bdb53e8ec7d
+2222	2268	7505297979318227	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-install	5b174a15e3bb476d
+2222	2268	7505297979318227	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-install	5b174a15e3bb476d
+2174	2222	7505297978861755	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-build	ab84a93e3fa64505
+2057	2118	7505297977806291	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-patch	c073a76d33766664
+57	2008	7505297976724666	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-download	c4c8f5e96b32ebde
+2057	2118	7505297977806291	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-patch	c073a76d33766664
+57	2008	7505297976724666	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-download	c4c8f5e96b32ebde
+2009	2057	7505297977215283	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-update	11910231a3f1358b
+2119	2174	7505297978391402	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-configure	6fe8d09869f1836a
+2321	2409	7505297980726706	CMakeFiles/googletest-populate-complete	924f3a7c0a0a9de5
+2119	2174	7505297978391402	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-configure	6fe8d09869f1836a
+2268	2321	7505297979835726	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-test	67af13902820c241
+2268	2321	7505297979835726	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-test	67af13902820c241
+2321	2409	7505297980726706	googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-done	924f3a7c0a0a9de5
+2321	2409	7505297980726706	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/CMakeFiles/googletest-populate-complete	924f3a7c0a0a9de5
+2321	2409	7505297980726706	C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/googletest-populate-done	924f3a7c0a0a9de5

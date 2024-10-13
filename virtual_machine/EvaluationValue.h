@@ -151,3 +151,58 @@ bool IS_STRING (const EvaluationValue& value) {
 bool IS_CODE (const EvaluationValue& value) {
     return IS_OBJECT_TYPE(value, ObjectType::CODE);
 }
+
+
+std::string evaValueToConstantString(const EvaluationValue &evaValue)
+{
+    std::stringstream ss;
+    if (IS_NUMBER(evaValue))
+    {
+        ss << evaValue.number();
+    }
+    else if (IS_BOOLEAN(evaValue))
+    {
+        ss << (evaValue.boolean() ? "true" : "false");
+    }
+    else if (IS_STRING(evaValue))
+    {
+        ss << '"' << AS_CPP_STRING(evaValue) << '"';
+    }
+    /*
+    else if (IS_CODE(evaValue))
+    {
+        auto code = AS_CODE(evaValue);
+        ss << "code: " << code << ": " << code->name << "/" << code->arity;
+    }
+    else if (IS_FUNCTION(evaValue))
+    {
+        auto fn = AS_FUNCTION(evaValue);
+        ss << fn->co->name << "/" << fn->co->arity;
+    }
+    else if (IS_NATIVE(evaValue))
+    {
+        auto fn = AS_NATIVE(evaValue);
+        ss << fn->name << "/" << fn->arity;
+    }
+    else if (IS_CELL(evaValue))
+    {
+        auto cell = AS_CELL(evaValue);
+        ss << "cell: " << evaValueToConstantString(cell->value);
+    }
+    else if (IS_CLASS(evaValue))
+    {
+        auto cls = AS_CLASS(evaValue);
+        ss << "class: " << cls->name;
+    }
+    else if (IS_INSTANCE(evaValue))
+    {
+        auto inst = AS_INSTANCE(evaValue);
+        ss << "instance: " << inst->cls->name;
+    }
+    */
+    else
+    {
+        DIE << "evaValueToConstantString: unknown type " << (int)evaValue.type;
+    }
+    return ss.str();
+}

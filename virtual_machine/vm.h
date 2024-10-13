@@ -9,7 +9,6 @@ using namespace syntax;
 #define STACK_LIMIT 512
 
 
-#include "Logger.h"
 #include "EvaluationValue.h"
 #include "bytecodeGenerator.h"
 
@@ -27,7 +26,7 @@ public:
         ip = &co->code[0];
         sp = stack.begin();
 
-
+        _bytecodeGenerator->disassembleBytecode();
         return evalExp();
     }
 

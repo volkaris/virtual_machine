@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include "Logger.h"
+
 constexpr auto OP_HALT = 0x00;
 constexpr auto OP_CONST = 0x01;
 constexpr auto OP_ADD = 0x02;
@@ -13,7 +16,26 @@ constexpr auto OP_JUMP_IF_FALSE = 0x07;
 constexpr auto OP_JUMP = 0x08;
 
 
+#define OP_STR(op) \
+    case OP_##op:  \
+        return #op
 
+std::string opcodeToString(uint8_t opcode) {
+    switch (opcode) {
+        OP_STR(HALT);
+        OP_STR(CONST);
+        OP_STR(ADD);
+        OP_STR(SUB);
+        OP_STR(MUL);
+        OP_STR(DIV);
+        OP_STR(COMPARE);
+        OP_STR(JUMP_IF_FALSE);
+        OP_STR(JUMP);
+        default:
+           DIE << "opcodeToString: unknown opcode: " << opcode;
+    }
+    return "Unknown";
+}
 
 
 // i love kostili!
