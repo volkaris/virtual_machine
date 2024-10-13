@@ -38,6 +38,8 @@ std::string opcodeToString(uint8_t opcode) {
         OP_STR(COMPARE);
         OP_STR(JUMP_IF_FALSE);
         OP_STR(JUMP);
+        OP_STR(GET_GLOBAL);
+        OP_STR(SET_GLOBAL);
         default:
            DIE << "opcodeToString: unknown opcode: " << opcode;
     }

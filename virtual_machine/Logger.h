@@ -1,3 +1,5 @@
+#pragma once
+
 #include <sstream>
 class ErrorLogMessage : public std::basic_ostringstream<char> {
 public:
@@ -7,4 +9,5 @@ public:
 		exit(EXIT_FAILURE);
 	}
 #define DIE ErrorLogMessage()
+#define log(value) std::cout << #value << " = " << (value) << "\n";
 };

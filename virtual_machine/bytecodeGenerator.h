@@ -11,11 +11,10 @@
 #include "disassembler/Disassembler.h"
 
 
-
 class bytecodeGenerator {
 public :
     explicit bytecodeGenerator (std::shared_ptr<Global> global)
-        : co(nullptr), global(global), disassembler(std::make_unique<Disassembler>()){}
+        : co(nullptr), global(global), disassembler(std::make_unique<Disassembler>(global)){}
 
     CodeObject* compile (const Exp& exp) {
         co = AS_CODE(ALLOC_CODE("main"));
@@ -53,9 +52,8 @@ public :
                 emit(OP_GET_GLOBAL);
                 emit(global->getGlobalIndex(exp.string));
 
-                throw std::runtime_error("unknown symbol");
+                //throw std::runtime_error("unknown symbol");
             }
-            //мб уберём throw
             break;
 
 

@@ -1,17 +1,22 @@
 /**
 * Created by Andrew
 */
+
+#pragma once
+
 #include <iomanip>
 #include <iostream>
 #include "bytecodeGenerator.h"
 #include "EvaluationValue.h"
 #include "OpCode.h"
+#include "Global.h"
 
-#ifndef Disassembler_h
-#define Disassembler_h
 
 class Disassembler {
 public :
+
+    Disassembler(std::shared_ptr<Global> global) : global(global) {}
+
     void disassemble(CodeObject* co) {
         std::cout << "\n----- Disassembly: " << co->name
                   << " -----\n\n";
@@ -22,6 +27,10 @@ public :
         }
     }
 private:
+
+    // Global var object
+    std::shared_ptr<Global> global;
+
      size_t disassembleInstruction(CodeObject* co, ssize_t offset) {
          std::ios_base::fmtflags f(std::cout.flags());
 
@@ -45,6 +54,9 @@ private:
              case OP_JUMP_IF_FALSE:
              case OP_JUMP:
                  return disassembleJump(co, opcode, offset);
+             case OP_GET_GLOBAL:
+             case OP_SET_GLOBAL:
+                 return disassembleGlobal(co, opcode, offset);
              default:
                  DIE << "disassembleInstruction: no disassembly for "
                      << opcodeToString(opcode);
@@ -59,16 +71,25 @@ private:
          dumpBytes(co, offset, 1);
          printOpCode(opcode);
          return offset + 1;
-     }
+    }
 
-     size_t disassembleConst(CodeObject* co, uint8_t opcode, size_t offset) {
-         dumpBytes(co, offset, 2);
-         printOpCode(opcode);
-         auto constIndex = co->code[offset + 1];
-         std::cout << (int)constIndex << " ("
+    size_t disassembleConst(CodeObject* co, uint8_t opcode, size_t offset) {
+        dumpBytes(co, offset, 2);
+        printOpCode(opcode);
+        auto constIndex = co->code[offset + 1];
+        std::cout << (int)constIndex << " ("
                    << evaValueToConstantString(co->constants[constIndex]) << ")";
-         return offset + 2;
-     }
+        return offset + 2;
+    }
+
+    size_t disassembleGlobal(CodeObject* co, uint8_t opcode, size_t offset) {
+        dumpBytes(co, offset, 2);
+        printOpCode(opcode);
+        auto globalIndex = co->code[offset + 1];
+        std::cout << (int)globalIndex << " ("
+                  << global->get(globalIndex).name << ")";
+        return offset + 2;
+    }
 
     void dumpBytes(CodeObject* co, size_t offset, size_t count) {
         std::ios_base::fmtflags f(std::cout.flags());
@@ -82,19 +103,19 @@ private:
     }
 
     void printOpCode(uint8_t opcode) {
-         std::ios_base::fmtflags f(std::cout.flags());
-         std::cout << std::left << std::setfill(' ') << std::setw(20)
-                   << opcodeToString(opcode) << " ";
-         std::cout.flags(f);
+        std::ios_base::fmtflags f(std::cout.flags());
+        std::cout << std::left << std::setfill(' ') << std::setw(20)
+            << opcodeToString(opcode) << " ";
+        std::cout.flags(f);
      }
 
-     size_t disassembleCompare(CodeObject* co, uint8_t opcode, size_t offset) {
-         dumpBytes(co, offset, 2);
-         printOpCode(OP_COMPARE);
-         auto compareOP = co->code[offset + 1];
-         std::cout << (int)compareOP << " (";
-         std::cout << inverseCompareOps_[compareOP] << ")";
-         return offset + 2;
+    size_t disassembleCompare(CodeObject* co, uint8_t opcode, size_t offset) {
+        dumpBytes(co, offset, 2);
+        printOpCode(OP_COMPARE);
+        auto compareOP = co->code[offset + 1];
+        std::cout << (int)compareOP << " (";
+        std::cout << inverseCompareOps_[compareOP] << ")";
+        return offset + 2;
     }
 
     size_t disassembleJump(CodeObject* co, uint8_t opcode, size_t offset) {
@@ -118,4 +139,3 @@ private:
 std::array<std::string, 6> Disassembler::inverseCompareOps_ = {
         "<", ">", "==", "<=", ">=", "!=",
 };
-#endif

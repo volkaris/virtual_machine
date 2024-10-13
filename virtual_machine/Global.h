@@ -1,6 +1,3 @@
-//
-// Created by valer on 13.10.2024.
-//
 #pragma once
 
 #include <string>
@@ -26,6 +23,7 @@ struct Global{
         auto index = getGlobalIndex(name);
 
         if (index != -1) {
+            // It's already defined
             return;
         }
 
@@ -51,8 +49,6 @@ struct Global{
     }
 
     bool exists(const std::string& name) { return getGlobalIndex(name) != -1; }
-
-
 
 
     std::vector<GlobalVar> globals;
