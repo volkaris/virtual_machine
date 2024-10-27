@@ -18,7 +18,7 @@ public:
     vm() : global(std::make_shared<Global>()),
            _parser(std::make_unique<parser>()),
            _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {
-        /*setGlobalVariables();*/
+        setGlobalVariables();
         locals.resize(1024);
     }
 
@@ -191,10 +191,9 @@ public:
     }
 
 private:
-    /*void setGlobalVariables() {
+    void setGlobalVariables() {
         global->addConst("x", 10);
-        global->addConst("y", 20);
-    }*/
+    }
 
     void push(const EvaluationValue &value) {
         if (static_cast<size_t>(sp - stack.begin()) == STACK_LIMIT) {
