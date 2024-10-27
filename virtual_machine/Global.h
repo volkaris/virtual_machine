@@ -17,7 +17,8 @@ struct Global{
 
     void set(size_t index, const EvaluationValue& value) {
         if (index >= globals.size()) {
-            DIE << "Global " << index << " doesn't exist.";
+            throw std::runtime_error("Global " + std::to_string(index) + " doesn't exist.");
+
         }
         globals[index].value = value;
     }
@@ -40,8 +41,8 @@ struct Global{
     }
 
     int getGlobalIndex(const std::string& name) {
-        if (globals.size() > 0) {
-            for (auto i = (int)globals.size() - 1; i >= 0; i--) {
+        if (!globals.empty()) {
+            for (auto i = static_cast<int>(globals.size()) - 1; i >= 0; i--) {
                 if (globals[i].name == name) {
                     return i;
                 }
@@ -51,9 +52,6 @@ struct Global{
     }
 
     bool exists(const std::string& name) { return getGlobalIndex(name) != -1; }
-
-
-
 
     std::vector<GlobalVar> globals;
 };

@@ -1,12 +1,3 @@
-/**
- *
- * syntax-cli -g src/parser/grammar.bnf -m LALR1 -o parser.h
- *
- */
-
-// -----------------------------------------------
-// Lexical grammar (tokens):
-
 %lex
 
 %%
@@ -24,7 +15,6 @@
 "*"                MULTIPLY
 "/"                DIVIDE
 
-
 "=="               EQUALS
 "!="               NOT_EQUALS
 "<="               LESS_EQUAL
@@ -32,9 +22,11 @@
 "<"                LESS
 ">"                GREATER
 
-
 "if"               IF
+"var"              VAR
 
+"="                ASSIGN
+";"                SEMICOLON
 
 \"[^\"]*\"         STRING
 
@@ -42,12 +34,7 @@
 
 [\w]+              SYMBOL
 
-
 /lex
-
-// -----------------------------------------------
-// Syntactic grammar (BNF):
-
 %{
 
 #include <string>
@@ -61,8 +48,11 @@ enum class ExpType {
   NUMBER,
   STRING,
   SYMBOL,
-  BINARY_EXP,  // For binary expressions like 5+10
-    IF_EXP,
+  BINARY_EXP,
+  IF_EXP,
+  VAR_DECLARATION,
+  BLOCK, // For statement lists or programs
+   ASSIGNMENT
 };
 
 /**
@@ -71,50 +61,103 @@ enum class ExpType {
 struct Exp {
   ExpType type;
 
+  // For NUMBER
   int number;
-  std::string string;
-  std::string symbol;
 
+  // For STRING and SYMBOL
+  std::string string;
+
+  // For BINARY_EXP
   std::string op;
   std::shared_ptr<Exp> left;
   std::shared_ptr<Exp> right;
 
-        std::shared_ptr<Exp> condition;
-        std::shared_ptr<Exp> thenBranch;
-        std::shared_ptr<Exp> elseBranch;
+  // For IF_EXP
+  std::shared_ptr<Exp> condition;
+  std::shared_ptr<Exp> thenBranch;
+  std::shared_ptr<Exp> elseBranch;
+
+
+  // For VAR_DECLARATION
+  std::string varName;
+  std::shared_ptr<Exp> varValue;
+
+  // For BLOCK
+  std::vector<std::shared_ptr<Exp>> statements;
 
   // Constructors:
+  // For NUMBER
   Exp(int number) : type(ExpType::NUMBER), number(number) {}
 
+  // For STRING and SYMBOL
   Exp(const std::string& strVal) {
     if (strVal[0] == '"') {
       type = ExpType::STRING;
       string = strVal.substr(1, strVal.size() - 2);
     } else {
       type = ExpType::SYMBOL;
-      symbol = strVal;
+      string = strVal;
     }
   }
 
- Exp(ExpType expType, std::shared_ptr<Exp> condition, std::shared_ptr<Exp> thenBranch, std::shared_ptr<Exp> elseBranch)
-            : type(expType), condition(condition), thenBranch(thenBranch), elseBranch(elseBranch) {}
+  // For VAR_DECLARATION
+  Exp(ExpType expType, const std::string& varName, std::shared_ptr<Exp> varValue)
+      : type(expType), varName(varName), varValue(varValue) {}
 
-
+  // For BINARY_EXP
   Exp(const std::string& op, std::shared_ptr<Exp> left, std::shared_ptr<Exp> right)
       : type(ExpType::BINARY_EXP), op(op), left(left), right(right) {}
+
+  // For IF_EXP
+  Exp(ExpType expType, std::shared_ptr<Exp> condition, std::shared_ptr<Exp> thenBranch, std::shared_ptr<Exp> elseBranch)
+      : type(expType), condition(condition), thenBranch(thenBranch), elseBranch(elseBranch) {}
+
+  // For BLOCK
+  Exp(const std::vector<std::shared_ptr<Exp>>& statements)
+      : type(ExpType::BLOCK), statements(statements) {}
+
+
 };
 
 using Value = std::shared_ptr<Exp>;
 
 %}
 
-
+%token VAR
+%token ASSIGN
+%token SEMICOLON
 %token IF
 
 %%
 
-Exp
-  : Expression { $$ = $1; }
+Program
+  : StatementList { $$ = $1; }
+  ;
+
+StatementList
+  : Statement
+      { $$ = std::make_shared<Exp>(std::vector<std::shared_ptr<Exp>>{ $1 }); }
+  | StatementList Statement
+      { $1->statements.push_back($2); $$ = $1; }
+  ;
+
+Statement
+  : VarDeclaration SEMICOLON
+      { $$ = $1; }
+  | Assignment SEMICOLON
+      { $$ = $1; }
+  | Expression SEMICOLON
+      { $$ = $1; }
+  ;
+
+Assignment
+  : SYMBOL ASSIGN Expression
+      { $$ = std::make_shared<Exp>(ExpType::ASSIGNMENT, $1, $3); }
+  ;
+
+VarDeclaration
+  : VAR SYMBOL ASSIGN Expression
+      { $$ = std::make_shared<Exp>(ExpType::VAR_DECLARATION, $2, $4); }
   ;
 
 Expression
