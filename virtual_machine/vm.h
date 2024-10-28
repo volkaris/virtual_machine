@@ -15,14 +15,15 @@ using namespace syntax;
 
 class vm {
 public:
-    vm() :
-    global(std::make_shared<Global>()),
-    _parser(std::make_unique<parser>()),
-    _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {
+    vm() : global(std::make_shared<Global>()),
+           _parser(std::make_unique<parser>()),
+           _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {
         setGlobalVariables();
+        locals.resize(1024);
     }
 
     EvaluationValue exec(const std::string &program) {
+
         std::shared_ptr<Exp> ast = _parser->parse(program);
 
         co = _bytecodeGenerator->compile(*ast);
@@ -32,6 +33,7 @@ public:
         sp = stack.begin();
 
         _bytecodeGenerator->disassembleBytecode();
+
         return evalExp();
     }
 
@@ -58,7 +60,7 @@ public:
                 res = casted_left != casted_right;
                 break;
             default: {
-                DIE << "Unknown compare operation: " << std::hex << static_cast<int>(compare_op);
+                throw std::runtime_error("Unknown compare operation." + std::to_string(compare_op));
             }
         }
         push(BOOLEAN(res));
@@ -154,32 +156,48 @@ public:
                     break;
                 }
 
+
+                case OP_NIL:
+                    push(NIL());
+                    break;
+                default:
+                    throw std::runtime_error("Unknown opcode: " + std::to_string(op_code));
+
                 case OP_GET_GLOBAL: {
                     auto globalIndex = READ_BYTE();
                     push(global->get(globalIndex).value);
                     break;
                 }
 
-                case OP_NIL:
-                    push(NIL());
+                case OP_SET_GLOBAL: {
+                    auto globalIndex = READ_BYTE();
+                    global->set(globalIndex, pop());
                     break;
-                default:
-                    DIE << "Unknown opcode: " << std::hex << static_cast<int>(op_code);
+                }
+
+                case OP_SET_LOCAL: {
+                    uint8_t slot = READ_BYTE();
+                    locals[slot] = pop();
+                    break;
+                }
+
+                case OP_GET_LOCAL: {
+                    uint8_t slot = READ_BYTE();
+                    push(locals[slot]);
+                    break;
+                }
             }
         }
     }
 
 private:
-
-
     void setGlobalVariables() {
-        global->addConst("x", 10);
-        global->addConst("y", 20);
+        /*global->addConst("x", 10);*/
     }
 
     void push(const EvaluationValue &value) {
         if (static_cast<size_t>(sp - stack.begin()) == STACK_LIMIT) {
-            DIE << "push(): Stack overflow.\n";
+            throw std::runtime_error("Stack overflow.");
         }
         *sp = value;
         sp++;
@@ -193,7 +211,7 @@ private:
 
     EvaluationValue pop() {
         if (sp == stack.begin()) {
-            DIE << "push () : Stack empty";
+            throw std::runtime_error("Stack empty.");
         }
         --sp;
         return *sp;
@@ -206,6 +224,9 @@ private:
     EvaluationValue GET_CONST() {
         return co->constants[READ_BYTE()];
     }
+
+
+    std::vector<EvaluationValue> locals;
 
     //Global object
     std::shared_ptr<Global> global;

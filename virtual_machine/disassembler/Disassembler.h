@@ -3,139 +3,98 @@
 */
 
 #pragma once
-
 #include <iomanip>
 #include <iostream>
-#include "bytecodeGenerator.h"
 #include "EvaluationValue.h"
 #include "OpCode.h"
-#include "Global.h"
 
 
 class Disassembler {
-public :
-
-    Disassembler(std::shared_ptr<Global> global) : global(global) {}
+public:
+    explicit Disassembler(const std::shared_ptr<Global>& global) : global(global) {}
 
     void disassemble(CodeObject* co) {
-        std::cout << "\n----- Disassembly: " << co->name
-                  << " -----\n\n";
+        std::cout << "== Disassembly of " << co->name << " ==" << std::endl;
         size_t offset = 0;
         while (offset < co->code.size()) {
             offset = disassembleInstruction(co, offset);
-            std::cout << "\n";
         }
     }
+
 private:
-
-    // Global var object
-    std::shared_ptr<Global> global;
-
-     size_t disassembleInstruction(CodeObject* co, ssize_t offset) {
-         std::ios_base::fmtflags f(std::cout.flags());
-
-         //Print bytecode offset;
-         std::cout << std::uppercase << std::hex << std::setfill('0') << std::setw(4)
-                   << offset << "    ";
-
-         auto opcode = co->code[offset];
-
-         switch (opcode) {
-             case OP_HALT:
-             case OP_ADD:
-             case OP_SUB:
-             case OP_MUL:
-             case OP_DIV:
-                 return disassembleSimple(co, opcode, offset);
-             case OP_COMPARE:
-                 return disassembleCompare(co, opcode, offset);
-             case OP_CONST:
-                 return disassembleConst(co, opcode, offset);
-             case OP_JUMP_IF_FALSE:
-             case OP_JUMP:
-                 return disassembleJump(co, opcode, offset);
-             case OP_GET_GLOBAL:
-             case OP_SET_GLOBAL:
-                 return disassembleGlobal(co, opcode, offset);
-             default:
-                 DIE << "disassembleInstruction: no disassembly for "
-                     << opcodeToString(opcode);
-         }
-
-         std::cout.flags(f);
-         return 0;
-     }
-
-
-    size_t disassembleSimple(CodeObject* co, uint8_t opcode, size_t offset) {
-         dumpBytes(co, offset, 1);
-         printOpCode(opcode);
-         return offset + 1;
-    }
-
-    size_t disassembleConst(CodeObject* co, uint8_t opcode, size_t offset) {
-        dumpBytes(co, offset, 2);
-        printOpCode(opcode);
-        auto constIndex = co->code[offset + 1];
-        std::cout << (int)constIndex << " ("
-                   << evaValueToConstantString(co->constants[constIndex]) << ")";
-        return offset + 2;
-    }
-
-    size_t disassembleGlobal(CodeObject* co, uint8_t opcode, size_t offset) {
-        dumpBytes(co, offset, 2);
-        printOpCode(opcode);
-        auto globalIndex = co->code[offset + 1];
-        std::cout << (int)globalIndex << " ("
-                  << global->get(globalIndex).name << ")";
-        return offset + 2;
-    }
-
-    void dumpBytes(CodeObject* co, size_t offset, size_t count) {
-        std::ios_base::fmtflags f(std::cout.flags());
-        std::stringstream ss;
-        for (auto i = 0; i < count; i++) {
-            ss << std::uppercase << std::hex << std::setfill('0') << std::setw(2)
-               << (((int)co->code[offset + i]) & 0xFF) << " ";
+    size_t disassembleInstruction(CodeObject* co, size_t offset) {
+        printf("%04zu ", offset);
+        uint8_t opcode = co->code[offset];
+        switch (opcode) {
+            case OP_HALT:
+                return simpleInstruction("OP_HALT", offset);
+            case OP_CONST:
+                return constantInstruction("OP_CONST", co, offset);
+            case OP_ADD:
+                return simpleInstruction("OP_ADD", offset);
+            case OP_SUB:
+                return simpleInstruction("OP_SUB", offset);
+            case OP_MUL:
+                return simpleInstruction("OP_MUL", offset);
+            case OP_DIV:
+                return simpleInstruction("OP_DIV", offset);
+            case OP_COMPARE:
+                return byteInstruction("OP_COMPARE", co, offset);
+            case OP_JUMP_IF_FALSE:
+                return jumpInstruction("OP_JUMP_IF_FALSE", 1, co, offset);
+            case OP_JUMP:
+                return jumpInstruction("OP_JUMP", 1, co, offset);
+            case OP_GET_GLOBAL:
+                return globalInstruction("OP_GET_GLOBAL", co, offset);
+            case OP_SET_GLOBAL:
+                return globalInstruction("OP_SET_GLOBAL", co, offset);
+            case OP_GET_LOCAL:
+                return byteInstruction("OP_GET_LOCAL", co, offset);
+            case OP_SET_LOCAL:
+                return byteInstruction("OP_SET_LOCAL", co, offset);
+            case OP_NIL:
+                return simpleInstruction("OP_NIL", offset);
+            default:
+                throw std::runtime_error("Unknown opcode: " + std::to_string(opcode));
+                return offset + 1;
         }
-        std::cout << std::left << std::setfill(' ') << std::setw(12) << ss.str();
-        std::cout.flags(f);
     }
 
-    void printOpCode(uint8_t opcode) {
-        std::ios_base::fmtflags f(std::cout.flags());
-        std::cout << std::left << std::setfill(' ') << std::setw(20)
-            << opcodeToString(opcode) << " ";
-        std::cout.flags(f);
-     }
+    size_t simpleInstruction(const std::string& name, size_t offset) {
+        printf("%-16s\n", name.c_str());
+        return offset + 1;
+    }
 
-    size_t disassembleCompare(CodeObject* co, uint8_t opcode, size_t offset) {
-        dumpBytes(co, offset, 2);
-        printOpCode(OP_COMPARE);
-        auto compareOP = co->code[offset + 1];
-        std::cout << (int)compareOP << " (";
-        std::cout << inverseCompareOps_[compareOP] << ")";
+    size_t constantInstruction(const std::string& name, CodeObject* co, size_t offset) {
+        uint8_t constantIndex = co->code[offset + 1];
+        printf("%-16s %4d ", name.c_str(), constantIndex);
+        std::cout << "; " << evaValueToConstantString(co->constants[constantIndex]) << std::endl;
         return offset + 2;
     }
 
-    size_t disassembleJump(CodeObject* co, uint8_t opcode, size_t offset) {
-        std::ios_base::fmtflags f(std::cout.flags());
-        dumpBytes(co, offset, 3);
-        printOpCode(opcode);
-        uint16_t address = readWordAtOffset(co, offset + 3);
-        std::cout << std::uppercase << std::hex << std::setfill('0') << std::setw(4)
-                  << (int)address << " ";
-        std::cout.flags(f);
+    size_t byteInstruction(const std::string& name, CodeObject* co, size_t offset) {
+        uint8_t slot = co->code[offset + 1];
+        std::string varName = "<unknown>";
+        if (co->localNames.find(slot) != co->localNames.end()) {
+            varName = co->localNames[slot];
+        }
+        printf("%-16s %4d (%s)\n", name.c_str(), slot, varName.c_str());
+        return offset + 2;
+    }
+
+    size_t jumpInstruction(const std::string& name, int sign, CodeObject* co, size_t offset) {
+        uint16_t jump = (co->code[offset + 1] << 8) | co->code[offset + 2];
+        printf("%-16s %4zu -> %zu\n", name.c_str(), offset, offset + 3 + sign * jump);
         return offset + 3;
     }
 
-    uint16_t readWordAtOffset(CodeObject* co, size_t offset) {
-        return (uint16_t)(co->code[offset] << 8) | co->code[offset + 1];
+    size_t globalInstruction(const std::string& name, CodeObject* co, size_t offset) {
+        uint8_t globalIndex = co->code[offset + 1];
+        const std::string& globalName = global->globals[globalIndex].name;
+        printf("%-16s %4d (%s)\n", name.c_str(), globalIndex, globalName.c_str());
+        return offset + 2;
     }
 
-    static std::array<std::string, 6> inverseCompareOps_;
+    std::shared_ptr<Global> global;
 };
 
-std::array<std::string, 6> Disassembler::inverseCompareOps_ = {
-        "<", ">", "==", "<=", ">=", "!=",
-};

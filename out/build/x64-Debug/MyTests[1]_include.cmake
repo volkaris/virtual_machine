@@ -1,5 +1,0 @@
-if(EXISTS "C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/MyTests[1]_tests.cmake")
-  include("C:/Users/USER/Desktop/virtual_machine/out/build/x64-Debug/MyTests[1]_tests.cmake")
-else()
-  add_test(MyTests_NOT_BUILT MyTests_NOT_BUILT)
-endif()

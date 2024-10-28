@@ -1,23 +1,24 @@
 #include <iostream>
-
-#include "Logger.h"
 #include "vm.h"
-#include "EvaluationValue.h"
 
 using namespace std;
 
 
 int main() {
     vm vm;
+    /*EvaluationValue result = vm.exec("var x = 10; x = x + 5;  x ");*/
+
     auto result = vm.exec(R"(
-
-      x
-
-    )");
-
-    std::cout << "\n";
-
-    std::cout << "OK" << "\n";
-
+           var x=10;
+           if (x!=10) {
+            var y=100;
+            var z=200;
+            var yz=y+z;
+            yz;
+  }
+            else {
+                y;
+}
+        )");
     return 0;
 }

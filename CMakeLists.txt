@@ -31,7 +31,6 @@ FetchContent_MakeAvailable(googletest)
 add_library(vm_lib STATIC
         virtual_machine/EvaluationValue.h
         virtual_machine/vm.h
-        virtual_machine/Logger.h
         virtual_machine/OpCode.h
         virtual_machine/parser.h
         virtual_machine/virtual_machine.cpp
