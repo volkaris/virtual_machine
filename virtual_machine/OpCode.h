@@ -20,6 +20,17 @@ constexpr auto OP_SET_GLOBAL = 0x10;
 constexpr auto OP_GET_LOCAL = 0x11;
 constexpr auto OP_SET_LOCAL = 0x12;
 
+constexpr auto OP_LOGICAL_NOT = 0X13;
+constexpr auto OP_LOGICAL_AND = 0X14;
+constexpr auto OP_LOGICAL_OR = 0X15;
+
+
+constexpr auto OP_JUMP_IF_FALSE_OR_POP = 0X16;
+constexpr auto OP_JUMP_IF_TRUE_OR_POP = 0X17;
+
+constexpr auto OP_DUP= 0X18;
+
+
 constexpr auto OP_NIL = 0x20;
 
 
@@ -39,12 +50,14 @@ inline std::string opcodeToString(uint8_t opcode) {
         case OP_NIL: return "NIL";
         case OP_GET_LOCAL: return "GET_LOCAL";
         case OP_SET_LOCAL: return "SET_LOCAL";
+        case OP_LOGICAL_NOT: return "LOGICAL_NOT";
+        case OP_LOGICAL_AND: return "LOGICAL_AND";
+        case OP_LOGICAL_OR: return "LOGICAL_OR";
+        case OP_JUMP_IF_FALSE_OR_POP: return "JUMP_IF_FALSE_OR_POP";
+        case OP_JUMP_IF_TRUE_OR_POP: return "JUMP_IF_TRUE_OR_POP";
+        case OP_DUP: return "DUP";
+
         default:
-           throw std::runtime_error("Unknown opcode: " + std::to_string(opcode));
+            throw std::runtime_error("Unknown opcode: " + std::to_string(opcode));
     }
-    return "Unknown";
 }
-
-
-
-

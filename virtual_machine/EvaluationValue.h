@@ -117,7 +117,7 @@ inline StringObject* AS_STRING (const EvaluationValue& value) {
     return static_cast<StringObject*>(value.object());
 }
 
-inline bool AS_BOOLEAN (const EvaluationValue& value) {
+inline bool AS_BOOL (const EvaluationValue& value) {
     return value.boolean();
 }
 
@@ -137,7 +137,7 @@ inline bool IS_NUMBER (const EvaluationValue& value) {
     return value.type == EvaluationValueType::NUMBER;
 }
 
-inline bool IS_BOOLEAN (const EvaluationValue& value) {
+inline bool IS_BOOL (const EvaluationValue& value) {
     return value.type == EvaluationValueType::BOOLEAN;
 }
 
@@ -165,7 +165,7 @@ inline std::string evaValueToConstantString(const EvaluationValue &evaValue)
     {
         ss << evaValue.number();
     }
-    else if (IS_BOOLEAN(evaValue))
+    else if (IS_BOOL(evaValue))
     {
         ss << (evaValue.boolean() ? "true" : "false");
     }

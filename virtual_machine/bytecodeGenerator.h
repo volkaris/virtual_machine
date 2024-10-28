@@ -49,35 +49,11 @@ public :
             }
 
             case ExpType::SYMBOL: {
-
                 if (exp.string == "true" || exp.string == "false") {
                     emit(OP_CONST);
                     emit(booleanConstIdx(exp.string == "true"));
                     break;
                 }
-
-                /*if (exp.string == "true" or exp.string == "false") {
-                    emit(OP_CONST);
-                    emit(booleanConstIdx(exp.string == "true") ? true : false);
-                    break;
-                }
-                //everything else is a variable
-                else {
-                    //local variables
-                    if (locals.find(exp.string) != locals.end()) {
-                        emit(OP_GET_LOCAL);
-                        emit(locals[exp.string]);
-                    }
-
-                    //global variables
-                    else if (global->exists(exp.string)) {
-                        // Global variable
-                        emit(OP_GET_GLOBAL);
-                        emit(global->getGlobalIndex(exp.string));
-                    } else {
-                        throw std::runtime_error("Undefined variable: " + exp.string);
-                    }
-                }*/
 
                 int slot = -1;
 
@@ -105,26 +81,69 @@ public :
                 break;
             }
 
-            case ExpType::BINARY_EXP: {
-                generate(*exp.left);
-                generate(*exp.right);
+            case ExpType::UNARY_EXP: {
+                generate(*exp.operand);
 
-                if (exp.op == "+") {
-                    emit(OP_ADD);
-                } else if (exp.op == "-") {
-                    emit(OP_SUB);
-                } else if (exp.op == "*") {
-                    emit(OP_MUL);
-                } else if (exp.op == "/") {
-                    emit(OP_DIV);
-                } else if (compareOperator.count(exp.op) != 0) {
-                    emit(OP_COMPARE);
-                    emit(compareOperator[exp.op]);
+                if (exp.unaryOp == "!") {
+                    emit(OP_LOGICAL_NOT);
                 } else {
-                    throw std::runtime_error("Unknown operator in binary expression.");
+                    //todo add support for unary minus and plus operators (++x, --x)
+                    throw std::runtime_error("Unknown operator in unary expression.");
                 }
                 break;
-                /*break;*/
+            }
+
+
+            case ExpType::BINARY_EXP: {
+
+                if (exp.op == "&&") {
+                    // Short-circuit evaluation for '&&'        //Short-circuit evaluation is when the second argument is not evaluated if the first argument is false.
+                    generate(*exp.left);                        //for binary && ur wont evaluate the right  if the left is false
+
+                    emit(OP_DUP); // Duplicate the value for checking
+                    emit(OP_JUMP_IF_FALSE_OR_POP);
+                    size_t jumpAddr = co->code.size();
+                    emit16(0); // Placeholder for jump address
+
+                    generate(*exp.right);
+
+                    // Backpatch the jump address
+                    size_t afterRight = co->code.size();
+                    patchAddress(jumpAddr, afterRight);
+                } else if (exp.op == "||") {                //for || ur wont evaluate the right  if the left is true
+                    // Short-circuit evaluation for '||'
+                    generate(*exp.left);
+
+                    emit(OP_DUP); // Duplicate the value for checking
+                    emit(OP_JUMP_IF_TRUE_OR_POP);
+                    size_t jumpAddr = co->code.size();
+                    emit16(0); // Placeholder for jump address
+
+                    generate(*exp.right);
+
+                    // Backpatch the jump address
+                    size_t afterRight = co->code.size();
+                    patchAddress(jumpAddr, afterRight);
+                } else {
+                    generate(*exp.left);
+                    generate(*exp.right);
+
+                    if (exp.op == "+") {
+                        emit(OP_ADD);
+                    } else if (exp.op == "-") {
+                        emit(OP_SUB);
+                    } else if (exp.op == "*") {
+                        emit(OP_MUL);
+                    } else if (exp.op == "/") {
+                        emit(OP_DIV);
+                    } else if (compareOperator.count(exp.op) != 0) {
+                        emit(OP_COMPARE);
+                        emit(compareOperator[exp.op]);
+                    } else {
+                        throw std::runtime_error("Unknown operator in binary expression.");
+                    }
+                }
+                break;
             }
             case ExpType::IF_EXP: {
                 // Generate code for condition
@@ -205,22 +224,6 @@ public :
                 break;
             }
             case ExpType::ASSIGNMENT: {
-                /*// Evaluate the new value
-                generate(*exp.varValue);
-
-                // Check if the variable exists
-                if (locals.find(exp.varName) != locals.end()) {
-                    // Emit OP_SET_LOCAL
-                    emit(OP_SET_LOCAL);
-                    emit(locals[exp.varName]);
-                } else if (global->exists(exp.varName)) {
-                    // Handle global variables if necessary
-                    emit(OP_SET_GLOBAL);
-                    emit(global->getGlobalIndex(exp.varName));
-                } else {
-                    throw std::runtime_error("Undefined variable: " + exp.varName);
-                }*/
-
                 generate(*exp.varValue);
 
                 int slot = -1;
@@ -248,9 +251,6 @@ public :
 
                 break;
             }
-
-
-            /*default: throw std::runtime_error("Unknown expression type.");*/
         }
     }
 
@@ -287,11 +287,11 @@ private:
 
     size_t booleanConstIdx(bool value) {
         for (auto i = 0; i < co->constants.size(); ++i) {
-            if (!IS_BOOLEAN(co->constants[i])) {
+            if (!IS_BOOL(co->constants[i])) {
                 continue;
             }
 
-            if (AS_BOOLEAN(co->constants[i]) == value) {
+            if (AS_BOOL(co->constants[i]) == value) {
                 return i;
             }
         }

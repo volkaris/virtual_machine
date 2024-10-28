@@ -156,56 +156,56 @@ TEST_F(VmTest, InvalidOperationStringNumber) {
 TEST_F(VmTest, GreaterThanComparison) {
     auto result = _vm->exec("(5 > 3);");
 
-    EXPECT_TRUE(IS_BOOLEAN(result)) << "Expected result to be a boolean.";
-    EXPECT_TRUE(AS_BOOLEAN(result)) << "Expected 5 > 3 to be true.";
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_TRUE(AS_BOOL(result)) << "Expected 5 > 3 to be true.";
 }
 
 // Test 14: Less Than Comparison
 TEST_F(VmTest, LessThanComparison) {
     auto result = _vm->exec("(2 < 4);");
 
-    EXPECT_TRUE(IS_BOOLEAN(result)) << "Expected result to be a boolean.";
-    EXPECT_TRUE(AS_BOOLEAN(result)) << "Expected 2 < 4 to be true.";
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_TRUE(AS_BOOL(result)) << "Expected 2 < 4 to be true.";
 }
 
 // Test 15: Equality Comparison
 TEST_F(VmTest, EqualityComparison) {
     auto result = _vm->exec("(5 == 5);");
 
-    EXPECT_TRUE(IS_BOOLEAN(result)) << "Expected result to be a boolean.";
-    EXPECT_TRUE(AS_BOOLEAN(result)) << "Expected 5 == 5 to be true.";
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_TRUE(AS_BOOL(result)) << "Expected 5 == 5 to be true.";
 }
 
 // Test 16: Greater Than or Equal Comparison
 TEST_F(VmTest, GreaterThanOrEqualComparison) {
     auto result = _vm->exec("(5 >= 5);");
 
-    EXPECT_TRUE(IS_BOOLEAN(result)) << "Expected result to be a boolean.";
-    EXPECT_TRUE(AS_BOOLEAN(result)) << "Expected 5 >= 5 to be true.";
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_TRUE(AS_BOOL(result)) << "Expected 5 >= 5 to be true.";
 }
 
 // Test 17: Less Than or Equal Comparison
 TEST_F(VmTest, LessThanOrEqualComparison) {
     auto result = _vm->exec("(3 <= 5);");
 
-    EXPECT_TRUE(IS_BOOLEAN(result)) << "Expected result to be a boolean.";
-    EXPECT_TRUE(AS_BOOLEAN(result)) << "Expected 3 <= 5 to be true.";
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_TRUE(AS_BOOL(result)) << "Expected 3 <= 5 to be true.";
 }
 
 // Test 18: Not Equal Comparison
 TEST_F(VmTest, NotEqualComparison) {
     auto result = _vm->exec("(5 != 3);");
 
-    EXPECT_TRUE(IS_BOOLEAN(result)) << "Expected result to be a boolean.";
-    EXPECT_TRUE(AS_BOOLEAN(result)) << "Expected 5 != 3 to be true.";
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_TRUE(AS_BOOL(result)) << "Expected 5 != 3 to be true.";
 }
 
 // Test 19: Invalid Comparison
 TEST_F(VmTest, InvalidComparison) {
     auto result = _vm->exec("(5 < 3);");
 
-    EXPECT_TRUE(IS_BOOLEAN(result)) << "Expected result to be a boolean.";
-    EXPECT_FALSE(AS_BOOLEAN(result)) << "Expected 5 < 3 to be false.";
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_FALSE(AS_BOOL(result)) << "Expected 5 < 3 to be false.";
 }
 
 // Test 20: Chained Operations
@@ -726,3 +726,133 @@ TEST_F(VmTest, NestedIfElseStatements) {
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
     EXPECT_EQ(AS_NUMBER(result), 2) << "Expected x to be 2.";
 }*/
+
+TEST_F(VmTest, LogicalNotOperator) {
+    auto result = _vm->exec(R"(
+        var x = true;
+        if (x) {
+            x = false;
+        } else {
+            x = true;
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_EQ(AS_BOOL(result), false) << "Expected x to be true.";
+}
+
+// Test 72: Logical AND Operator (Both True)
+TEST_F(VmTest, LogicalAndBothTrue) {
+    auto result = _vm->exec(R"(
+        var a = true;
+        var b = true;
+        var c = a && b;
+        c;
+    )");
+
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_EQ(AS_BOOL(result), true) << "Expected c to be true.";
+}
+
+// Test 73: Logical AND Operator (One False)
+TEST_F(VmTest, LogicalAndOneFalse) {
+    auto result = _vm->exec(R"(
+        var a = true;
+        var b = false;
+        var c = a && b;
+        c;
+    )");
+
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_EQ(AS_BOOL(result), false) << "Expected c to be false.";
+}
+
+// Test 74: Logical OR Operator (Both False)
+TEST_F(VmTest, LogicalOrBothFalse) {
+    auto result = _vm->exec(R"(
+        var a = false;
+        var b = false;
+        var c = a || b;
+        c;
+    )");
+
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_EQ(AS_BOOL(result), false) << "Expected c to be false.";
+}
+
+// Test 75: Logical OR Operator (One True)
+TEST_F(VmTest, LogicalOrOneTrue) {
+    auto result = _vm->exec(R"(
+        var a = false;
+        var b = true;
+        var c = a || b;
+        c;
+    )");
+
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_EQ(AS_BOOL(result), true) << "Expected c to be true.";
+}
+
+// Test 76: Short-Circuit Evaluation of Logical AND
+TEST_F(VmTest, LogicalAndShortCircuit) {
+    auto result = _vm->exec(R"(
+        var a = false;
+        var b = (a && (1 / 0 > 0)); // Should not evaluate (1 / 0 > 0)
+        b;
+    )");
+
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_EQ(AS_BOOL(result), false) << "Expected b to be false.";
+}
+
+// Test 77: Short-Circuit Evaluation of Logical OR
+TEST_F(VmTest, LogicalOrShortCircuit) {
+    auto result = _vm->exec(R"(
+        var a = true;
+        var b = (a || (1 / 0 > 0)); // Should not evaluate (1 / 0 > 0)
+        b;
+    )");
+
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_EQ(AS_BOOL(result), true) << "Expected b to be true.";
+}
+
+// Test 78: Complex Logical Expression
+TEST_F(VmTest, ComplexLogicalExpression) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        var y = 10;
+        var z = !(x > y) && (x < y) || false;
+        z;
+    )");
+
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_EQ(AS_BOOL(result), true) << "Expected z to be true.";
+}
+
+// Test 79: Logical Operators with Non-Boolean Values
+TEST_F(VmTest, LogicalOperatorsWithNonBooleanValues) {
+    auto result = _vm->exec(R"(
+        var a = 0;
+        var b = "hello";
+        var c = a || b;
+        c;
+    )");
+
+    // Assuming that 0 is false, "hello" is truthy
+    EXPECT_TRUE(IS_STRING(result)) << "Expected result to be a string.";
+    EXPECT_EQ(AS_CPP_STRING(result), "hello") << "Expected c to be 'hello'.";
+}
+
+// Test 80: Logical NOT with Non-Boolean Value
+TEST_F(VmTest, LogicalNotWithNonBooleanValue) {
+    auto result = _vm->exec(R"(
+        var a = 0;
+        var b = !a;
+        b;
+    )");
+
+    EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
+    EXPECT_EQ(AS_BOOL(result), true) << "Expected b to be true.";
+}
