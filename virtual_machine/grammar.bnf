@@ -7,8 +7,6 @@
 
 \s+                %empty
 
-"("                L_PAREN
-")"                R_PAREN
 
 "+"                PLUS
 "-"                MINUS
@@ -28,8 +26,14 @@
 "="                ASSIGN
 ";"                SEMICOLON
 
+
+"("                L_PAREN
+")"                R_PAREN
+
 "{"                 L_BRACE
 "}"                 R_BRACE
+
+"else"              ELSE
 
 
 \"[^\"]*\"         STRING
@@ -131,9 +135,31 @@ using Value = std::shared_ptr<Exp>;
 %token ASSIGN
 %token SEMICOLON
 %token IF
+%token ELSE
+
 
 %token L_BRACE
 %token R_BRACE
+%token L_PAREN
+%token R_PAREN
+
+%token NUMBER
+%token STRING
+%token SYMBOL
+
+%token PLUS
+%token MINUS
+%token MULTIPLY
+%token DIVIDE
+
+%token EQUALS
+%token NOT_EQUALS
+%token LESS
+%token GREATER
+%token LESS_EQUAL
+%token GREATER_EQUAL
+
+
 
 
 %%
@@ -150,6 +176,31 @@ StatementList
   ;
 
 Statement
+  : MatchedStatement
+  | UnmatchedStatement
+  ;
+
+MatchedStatement
+  : IfStatement
+  | OtherStatement
+  ;
+
+UnmatchedStatement
+  : IfWithoutElse
+  ;
+
+
+IfStatement
+  : IF L_PAREN Expression R_PAREN MatchedStatement ELSE MatchedStatement
+      { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $5, $7); }
+  ;
+
+IfWithoutElse
+  : IF L_PAREN Expression R_PAREN Statement
+      { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $5, nullptr); }
+  ;
+
+OtherStatement
   : VarDeclaration SEMICOLON
       { $$ = $1; }
   | Assignment SEMICOLON
@@ -157,8 +208,9 @@ Statement
   | Expression SEMICOLON
       { $$ = $1; }
   | Block
-        { $$ = $1; }
+      { $$ = $1; }
   ;
+
 
 Block
   : L_BRACE StatementList R_BRACE
@@ -194,16 +246,8 @@ Term
   ;
 
 Factor
-  : IfExpression               { $$ = $1; }
-  | L_PAREN Expression R_PAREN { $$ = $2; }
+  : L_PAREN Expression R_PAREN { $$ = $2; }
   | NUMBER                     { $$ = std::make_shared<Exp>(std::stoi($1)); }
   | STRING                     { $$ = std::make_shared<Exp>($1); }
   | SYMBOL                     { $$ = std::make_shared<Exp>($1); }
-  ;
-
-IfExpression
-  : L_PAREN IF Expression Expression R_PAREN
-      { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $4, nullptr); }
-  | L_PAREN IF Expression Expression Expression R_PAREN
-    { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $4, $5); }
   ;

@@ -157,28 +157,29 @@ class Tokenizer;
 enum class TokenType {
   __EMPTY = -1,
   // clang-format off
-  SEMICOLON = 10,
-  L_BRACE = 11,
-  R_BRACE = 12,
-  SYMBOL = 13,
-  ASSIGN = 14,
-  VAR = 15,
-  PLUS = 16,
-  MINUS = 17,
-  EQUALS = 18,
-  NOT_EQUALS = 19,
-  LESS = 20,
-  GREATER = 21,
-  LESS_EQUAL = 22,
-  GREATER_EQUAL = 23,
-  MULTIPLY = 24,
-  DIVIDE = 25,
-  L_PAREN = 26,
-  R_PAREN = 27,
-  NUMBER = 28,
-  STRING = 29,
-  IF = 30,
-  __EOF = 31
+  IF = 14,
+  L_PAREN = 15,
+  R_PAREN = 16,
+  ELSE = 17,
+  SEMICOLON = 18,
+  L_BRACE = 19,
+  R_BRACE = 20,
+  SYMBOL = 21,
+  ASSIGN = 22,
+  VAR = 23,
+  PLUS = 24,
+  MINUS = 25,
+  EQUALS = 26,
+  NOT_EQUALS = 27,
+  LESS = 28,
+  GREATER = 29,
+  LESS_EQUAL = 30,
+  GREATER_EQUAL = 31,
+  MULTIPLY = 32,
+  DIVIDE = 33,
+  NUMBER = 34,
+  STRING = 35,
+  __EOF = 36
   // clang-format on
 };
 
@@ -411,7 +412,7 @@ class Tokenizer {
    * Lexical rules.
    */
   // clang-format off
-  static constexpr size_t LEX_RULES_COUNT = 24;
+  static constexpr size_t LEX_RULES_COUNT = 25;
   static std::array<LexRule, LEX_RULES_COUNT> lexRules_;
   static std::map<TokenizerState, std::vector<size_t>> lexRulesByStartConditions_;
   // clang-format on
@@ -473,67 +474,67 @@ return TokenType::__EMPTY;
 }
 
 inline TokenType _lexRule4(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::L_PAREN;
-}
-
-inline TokenType _lexRule5(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::R_PAREN;
-}
-
-inline TokenType _lexRule6(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::PLUS;
 }
 
-inline TokenType _lexRule7(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule5(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::MINUS;
 }
 
-inline TokenType _lexRule8(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule6(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::MULTIPLY;
 }
 
-inline TokenType _lexRule9(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule7(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::DIVIDE;
 }
 
-inline TokenType _lexRule10(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule8(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::EQUALS;
 }
 
-inline TokenType _lexRule11(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule9(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::NOT_EQUALS;
 }
 
-inline TokenType _lexRule12(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule10(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::LESS_EQUAL;
 }
 
-inline TokenType _lexRule13(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule11(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::GREATER_EQUAL;
 }
 
-inline TokenType _lexRule14(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule12(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::LESS;
 }
 
-inline TokenType _lexRule15(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule13(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::GREATER;
 }
 
-inline TokenType _lexRule16(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule14(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::IF;
 }
 
-inline TokenType _lexRule17(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule15(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::VAR;
 }
 
-inline TokenType _lexRule18(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule16(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::ASSIGN;
 }
 
-inline TokenType _lexRule19(const Tokenizer& tokenizer, const std::string& yytext) {
+inline TokenType _lexRule17(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::SEMICOLON;
+}
+
+inline TokenType _lexRule18(const Tokenizer& tokenizer, const std::string& yytext) {
+return TokenType::L_PAREN;
+}
+
+inline TokenType _lexRule19(const Tokenizer& tokenizer, const std::string& yytext) {
+return TokenType::R_PAREN;
 }
 
 inline TokenType _lexRule20(const Tokenizer& tokenizer, const std::string& yytext) {
@@ -545,14 +546,18 @@ return TokenType::R_BRACE;
 }
 
 inline TokenType _lexRule22(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::STRING;
+return TokenType::ELSE;
 }
 
 inline TokenType _lexRule23(const Tokenizer& tokenizer, const std::string& yytext) {
-return TokenType::NUMBER;
+return TokenType::STRING;
 }
 
 inline TokenType _lexRule24(const Tokenizer& tokenizer, const std::string& yytext) {
+return TokenType::NUMBER;
+}
+
+inline TokenType _lexRule25(const Tokenizer& tokenizer, const std::string& yytext) {
 return TokenType::SYMBOL;
 }
 // clang-format on
@@ -565,29 +570,30 @@ std::array<LexRule, Tokenizer::LEX_RULES_COUNT> Tokenizer::lexRules_ = {{
   {std::regex(R"(^\/\/.*)"), &_lexRule1},
   {std::regex(R"(^\/\*[\s\S]*?\*\/)"), &_lexRule2},
   {std::regex(R"(^\s+)"), &_lexRule3},
-  {std::regex(R"(^\()"), &_lexRule4},
-  {std::regex(R"(^\))"), &_lexRule5},
-  {std::regex(R"(^\+)"), &_lexRule6},
-  {std::regex(R"(^-)"), &_lexRule7},
-  {std::regex(R"(^\*)"), &_lexRule8},
-  {std::regex(R"(^\/)"), &_lexRule9},
-  {std::regex(R"(^==)"), &_lexRule10},
-  {std::regex(R"(^!=)"), &_lexRule11},
-  {std::regex(R"(^<=)"), &_lexRule12},
-  {std::regex(R"(^>=)"), &_lexRule13},
-  {std::regex(R"(^<)"), &_lexRule14},
-  {std::regex(R"(^>)"), &_lexRule15},
-  {std::regex(R"(^if)"), &_lexRule16},
-  {std::regex(R"(^var)"), &_lexRule17},
-  {std::regex(R"(^=)"), &_lexRule18},
-  {std::regex(R"(^;)"), &_lexRule19},
+  {std::regex(R"(^\+)"), &_lexRule4},
+  {std::regex(R"(^-)"), &_lexRule5},
+  {std::regex(R"(^\*)"), &_lexRule6},
+  {std::regex(R"(^\/)"), &_lexRule7},
+  {std::regex(R"(^==)"), &_lexRule8},
+  {std::regex(R"(^!=)"), &_lexRule9},
+  {std::regex(R"(^<=)"), &_lexRule10},
+  {std::regex(R"(^>=)"), &_lexRule11},
+  {std::regex(R"(^<)"), &_lexRule12},
+  {std::regex(R"(^>)"), &_lexRule13},
+  {std::regex(R"(^if)"), &_lexRule14},
+  {std::regex(R"(^var)"), &_lexRule15},
+  {std::regex(R"(^=)"), &_lexRule16},
+  {std::regex(R"(^;)"), &_lexRule17},
+  {std::regex(R"(^\()"), &_lexRule18},
+  {std::regex(R"(^\))"), &_lexRule19},
   {std::regex(R"(^\{)"), &_lexRule20},
   {std::regex(R"(^\})"), &_lexRule21},
-  {std::regex(R"(^"[^\"]*")"), &_lexRule22},
-  {std::regex(R"(^\d+)"), &_lexRule23},
-  {std::regex(R"(^[\w]+)"), &_lexRule24}
+  {std::regex(R"(^else)"), &_lexRule22},
+  {std::regex(R"(^"[^\"]*")"), &_lexRule23},
+  {std::regex(R"(^\d+)"), &_lexRule24},
+  {std::regex(R"(^[\w]+)"), &_lexRule25}
 }};
-std::map<TokenizerState, std::vector<size_t>> Tokenizer::lexRulesByStartConditions_ =  {{TokenizerState::INITIAL, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}}};
+std::map<TokenizerState, std::vector<size_t>> Tokenizer::lexRulesByStartConditions_ =  {{TokenizerState::INITIAL, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24}}};
 // clang-format on
 
 #endif
@@ -789,10 +795,10 @@ class parser {
   }
 
   // clang-format off
-  static constexpr size_t PRODUCTIONS_COUNT = 30;
+  static constexpr size_t PRODUCTIONS_COUNT = 34;
   static std::array<Production, PRODUCTIONS_COUNT> productions_;
 
-  static constexpr size_t ROWS_COUNT = 57;
+  static constexpr size_t ROWS_COUNT = 68;
   static std::array<Row, ROWS_COUNT> table_;
   // clang-format on
 };
@@ -848,7 +854,6 @@ PUSH_VR();
 
 void _handler5(yyparse& parser) {
 // Semantic action prologue.
-parser.tokensStack.pop_back();
 auto _1 = POP_V();
 
 auto __ = _1;
@@ -860,7 +865,6 @@ PUSH_VR();
 
 void _handler6(yyparse& parser) {
 // Semantic action prologue.
-parser.tokensStack.pop_back();
 auto _1 = POP_V();
 
 auto __ = _1;
@@ -872,7 +876,6 @@ PUSH_VR();
 
 void _handler7(yyparse& parser) {
 // Semantic action prologue.
-parser.tokensStack.pop_back();
 auto _1 = POP_V();
 
 auto __ = _1;
@@ -895,6 +898,96 @@ PUSH_VR();
 
 void _handler9(yyparse& parser) {
 // Semantic action prologue.
+auto _1 = POP_V();
+
+auto __ = _1;
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler10(yyparse& parser) {
+// Semantic action prologue.
+auto _7 = POP_V();
+parser.tokensStack.pop_back();
+auto _5 = POP_V();
+parser.tokensStack.pop_back();
+auto _3 = POP_V();
+parser.tokensStack.pop_back();
+parser.tokensStack.pop_back();
+
+auto __ = std::make_shared<Exp>(ExpType::IF_EXP, _3, _5, _7);
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler11(yyparse& parser) {
+// Semantic action prologue.
+auto _5 = POP_V();
+parser.tokensStack.pop_back();
+auto _3 = POP_V();
+parser.tokensStack.pop_back();
+parser.tokensStack.pop_back();
+
+auto __ = std::make_shared<Exp>(ExpType::IF_EXP, _3, _5, nullptr);
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler12(yyparse& parser) {
+// Semantic action prologue.
+parser.tokensStack.pop_back();
+auto _1 = POP_V();
+
+auto __ = _1;
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler13(yyparse& parser) {
+// Semantic action prologue.
+parser.tokensStack.pop_back();
+auto _1 = POP_V();
+
+auto __ = _1;
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler14(yyparse& parser) {
+// Semantic action prologue.
+parser.tokensStack.pop_back();
+auto _1 = POP_V();
+
+auto __ = _1;
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler15(yyparse& parser) {
+// Semantic action prologue.
+auto _1 = POP_V();
+
+auto __ = _1;
+
+ // Semantic action epilogue.
+PUSH_VR();
+
+}
+
+void _handler16(yyparse& parser) {
+// Semantic action prologue.
 parser.tokensStack.pop_back();
 auto _2 = POP_V();
 parser.tokensStack.pop_back();
@@ -906,7 +999,7 @@ PUSH_VR();
 
 }
 
-void _handler10(yyparse& parser) {
+void _handler17(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -919,7 +1012,7 @@ PUSH_VR();
 
 }
 
-void _handler11(yyparse& parser) {
+void _handler18(yyparse& parser) {
 // Semantic action prologue.
 auto _4 = POP_V();
 parser.tokensStack.pop_back();
@@ -933,7 +1026,7 @@ PUSH_VR();
 
 }
 
-void _handler12(yyparse& parser) {
+void _handler19(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -946,7 +1039,7 @@ PUSH_VR();
 
 }
 
-void _handler13(yyparse& parser) {
+void _handler20(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -959,7 +1052,7 @@ PUSH_VR();
 
 }
 
-void _handler14(yyparse& parser) {
+void _handler21(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -972,7 +1065,7 @@ PUSH_VR();
 
 }
 
-void _handler15(yyparse& parser) {
+void _handler22(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -985,7 +1078,7 @@ PUSH_VR();
 
 }
 
-void _handler16(yyparse& parser) {
+void _handler23(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -998,7 +1091,7 @@ PUSH_VR();
 
 }
 
-void _handler17(yyparse& parser) {
+void _handler24(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -1011,7 +1104,7 @@ PUSH_VR();
 
 }
 
-void _handler18(yyparse& parser) {
+void _handler25(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -1024,7 +1117,7 @@ PUSH_VR();
 
 }
 
-void _handler19(yyparse& parser) {
+void _handler26(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -1037,7 +1130,7 @@ PUSH_VR();
 
 }
 
-void _handler20(yyparse& parser) {
+void _handler27(yyparse& parser) {
 // Semantic action prologue.
 auto _1 = POP_V();
 
@@ -1048,7 +1141,7 @@ PUSH_VR();
 
 }
 
-void _handler21(yyparse& parser) {
+void _handler28(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -1061,7 +1154,7 @@ PUSH_VR();
 
 }
 
-void _handler22(yyparse& parser) {
+void _handler29(yyparse& parser) {
 // Semantic action prologue.
 auto _3 = POP_V();
 parser.tokensStack.pop_back();
@@ -1074,7 +1167,7 @@ PUSH_VR();
 
 }
 
-void _handler23(yyparse& parser) {
+void _handler30(yyparse& parser) {
 // Semantic action prologue.
 auto _1 = POP_V();
 
@@ -1085,18 +1178,7 @@ PUSH_VR();
 
 }
 
-void _handler24(yyparse& parser) {
-// Semantic action prologue.
-auto _1 = POP_V();
-
-auto __ = _1;
-
- // Semantic action epilogue.
-PUSH_VR();
-
-}
-
-void _handler25(yyparse& parser) {
+void _handler31(yyparse& parser) {
 // Semantic action prologue.
 parser.tokensStack.pop_back();
 auto _2 = POP_V();
@@ -1109,7 +1191,7 @@ PUSH_VR();
 
 }
 
-void _handler26(yyparse& parser) {
+void _handler32(yyparse& parser) {
 // Semantic action prologue.
 auto _1 = POP_T();
 
@@ -1120,7 +1202,7 @@ PUSH_VR();
 
 }
 
-void _handler27(yyparse& parser) {
+void _handler33(yyparse& parser) {
 // Semantic action prologue.
 auto _1 = POP_T();
 
@@ -1131,42 +1213,11 @@ PUSH_VR();
 
 }
 
-void _handler28(yyparse& parser) {
+void _handler34(yyparse& parser) {
 // Semantic action prologue.
 auto _1 = POP_T();
 
 auto __ = std::make_shared<Exp>(_1);
-
- // Semantic action epilogue.
-PUSH_VR();
-
-}
-
-void _handler29(yyparse& parser) {
-// Semantic action prologue.
-parser.tokensStack.pop_back();
-auto _4 = POP_V();
-auto _3 = POP_V();
-parser.tokensStack.pop_back();
-parser.tokensStack.pop_back();
-
-auto __ = std::make_shared<Exp>(ExpType::IF_EXP, _3, _4, nullptr);
-
- // Semantic action epilogue.
-PUSH_VR();
-
-}
-
-void _handler30(yyparse& parser) {
-// Semantic action prologue.
-parser.tokensStack.pop_back();
-auto _5 = POP_V();
-auto _4 = POP_V();
-auto _3 = POP_V();
-parser.tokensStack.pop_back();
-parser.tokensStack.pop_back();
-
-auto __ = std::make_shared<Exp>(ExpType::IF_EXP, _3, _4, _5);
 
  // Semantic action epilogue.
 PUSH_VR();
@@ -1179,32 +1230,36 @@ std::array<Production, yyparse::PRODUCTIONS_COUNT> yyparse::productions_ = {{{-1
 {0, 1, &_handler2},
 {1, 1, &_handler3},
 {1, 2, &_handler4},
-{2, 2, &_handler5},
-{2, 2, &_handler6},
-{2, 2, &_handler7},
-{2, 1, &_handler8},
-{3, 3, &_handler9},
-{4, 3, &_handler10},
-{5, 4, &_handler11},
-{6, 3, &_handler12},
-{6, 3, &_handler13},
-{6, 3, &_handler14},
-{6, 3, &_handler15},
-{6, 3, &_handler16},
-{6, 3, &_handler17},
-{6, 3, &_handler18},
-{6, 3, &_handler19},
-{6, 1, &_handler20},
-{7, 3, &_handler21},
-{7, 3, &_handler22},
-{7, 1, &_handler23},
-{8, 1, &_handler24},
-{8, 3, &_handler25},
-{8, 1, &_handler26},
-{8, 1, &_handler27},
-{8, 1, &_handler28},
-{9, 5, &_handler29},
-{9, 6, &_handler30}}};
+{2, 1, &_handler5},
+{2, 1, &_handler6},
+{3, 1, &_handler7},
+{3, 1, &_handler8},
+{4, 1, &_handler9},
+{5, 7, &_handler10},
+{6, 5, &_handler11},
+{7, 2, &_handler12},
+{7, 2, &_handler13},
+{7, 2, &_handler14},
+{7, 1, &_handler15},
+{8, 3, &_handler16},
+{9, 3, &_handler17},
+{10, 4, &_handler18},
+{11, 3, &_handler19},
+{11, 3, &_handler20},
+{11, 3, &_handler21},
+{11, 3, &_handler22},
+{11, 3, &_handler23},
+{11, 3, &_handler24},
+{11, 3, &_handler25},
+{11, 3, &_handler26},
+{11, 1, &_handler27},
+{12, 3, &_handler28},
+{12, 3, &_handler29},
+{12, 1, &_handler30},
+{13, 3, &_handler31},
+{13, 1, &_handler32},
+{13, 1, &_handler33},
+{13, 1, &_handler34}}};
 // clang-format on
 
 // ------------------------------------------------------------------
@@ -1212,63 +1267,74 @@ std::array<Production, yyparse::PRODUCTIONS_COUNT> yyparse::productions_ = {{{-1
 
 // clang-format off
 std::array<Row, yyparse::ROWS_COUNT> yyparse::table_ = {
-    Row {{0, {TE::Transit, 1}}, {1, {TE::Transit, 2}}, {2, {TE::Transit, 3}}, {3, {TE::Transit, 7}}, {4, {TE::Transit, 5}}, {5, {TE::Transit, 4}}, {6, {TE::Transit, 6}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {11, {TE::Shift, 16}}, {13, {TE::Shift, 9}}, {15, {TE::Shift, 8}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{31, {TE::Accept, 0}}},
-    Row {{2, {TE::Transit, 17}}, {3, {TE::Transit, 7}}, {4, {TE::Transit, 5}}, {5, {TE::Transit, 4}}, {6, {TE::Transit, 6}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {11, {TE::Shift, 16}}, {13, {TE::Shift, 9}}, {15, {TE::Shift, 8}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}, {31, {TE::Reduce, 1}}},
-    Row {{11, {TE::Reduce, 2}}, {12, {TE::Reduce, 2}}, {13, {TE::Reduce, 2}}, {15, {TE::Reduce, 2}}, {26, {TE::Reduce, 2}}, {28, {TE::Reduce, 2}}, {29, {TE::Reduce, 2}}, {31, {TE::Reduce, 2}}},
-    Row {{10, {TE::Shift, 18}}},
-    Row {{10, {TE::Shift, 19}}},
-    Row {{10, {TE::Shift, 20}}, {16, {TE::Shift, 21}}, {17, {TE::Shift, 22}}, {18, {TE::Shift, 23}}, {19, {TE::Shift, 24}}, {20, {TE::Shift, 25}}, {21, {TE::Shift, 26}}, {22, {TE::Shift, 27}}, {23, {TE::Shift, 28}}},
-    Row {{11, {TE::Reduce, 7}}, {12, {TE::Reduce, 7}}, {13, {TE::Reduce, 7}}, {15, {TE::Reduce, 7}}, {26, {TE::Reduce, 7}}, {28, {TE::Reduce, 7}}, {29, {TE::Reduce, 7}}, {31, {TE::Reduce, 7}}},
-    Row {{13, {TE::Shift, 50}}},
-    Row {{10, {TE::Reduce, 27}}, {14, {TE::Shift, 53}}, {16, {TE::Reduce, 27}}, {17, {TE::Reduce, 27}}, {18, {TE::Reduce, 27}}, {19, {TE::Reduce, 27}}, {20, {TE::Reduce, 27}}, {21, {TE::Reduce, 27}}, {22, {TE::Reduce, 27}}, {23, {TE::Reduce, 27}}, {24, {TE::Reduce, 27}}, {25, {TE::Reduce, 27}}},
-    Row {{10, {TE::Reduce, 19}}, {13, {TE::Reduce, 19}}, {16, {TE::Reduce, 19}}, {17, {TE::Reduce, 19}}, {18, {TE::Reduce, 19}}, {19, {TE::Reduce, 19}}, {20, {TE::Reduce, 19}}, {21, {TE::Reduce, 19}}, {22, {TE::Reduce, 19}}, {23, {TE::Reduce, 19}}, {24, {TE::Shift, 31}}, {25, {TE::Shift, 32}}, {26, {TE::Reduce, 19}}, {27, {TE::Reduce, 19}}, {28, {TE::Reduce, 19}}, {29, {TE::Reduce, 19}}},
-    Row {{10, {TE::Reduce, 22}}, {13, {TE::Reduce, 22}}, {16, {TE::Reduce, 22}}, {17, {TE::Reduce, 22}}, {18, {TE::Reduce, 22}}, {19, {TE::Reduce, 22}}, {20, {TE::Reduce, 22}}, {21, {TE::Reduce, 22}}, {22, {TE::Reduce, 22}}, {23, {TE::Reduce, 22}}, {24, {TE::Reduce, 22}}, {25, {TE::Reduce, 22}}, {26, {TE::Reduce, 22}}, {27, {TE::Reduce, 22}}, {28, {TE::Reduce, 22}}, {29, {TE::Reduce, 22}}},
-    Row {{10, {TE::Reduce, 23}}, {13, {TE::Reduce, 23}}, {16, {TE::Reduce, 23}}, {17, {TE::Reduce, 23}}, {18, {TE::Reduce, 23}}, {19, {TE::Reduce, 23}}, {20, {TE::Reduce, 23}}, {21, {TE::Reduce, 23}}, {22, {TE::Reduce, 23}}, {23, {TE::Reduce, 23}}, {24, {TE::Reduce, 23}}, {25, {TE::Reduce, 23}}, {26, {TE::Reduce, 23}}, {27, {TE::Reduce, 23}}, {28, {TE::Reduce, 23}}, {29, {TE::Reduce, 23}}},
-    Row {{6, {TE::Transit, 34}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}, {30, {TE::Shift, 35}}},
-    Row {{10, {TE::Reduce, 25}}, {13, {TE::Reduce, 25}}, {16, {TE::Reduce, 25}}, {17, {TE::Reduce, 25}}, {18, {TE::Reduce, 25}}, {19, {TE::Reduce, 25}}, {20, {TE::Reduce, 25}}, {21, {TE::Reduce, 25}}, {22, {TE::Reduce, 25}}, {23, {TE::Reduce, 25}}, {24, {TE::Reduce, 25}}, {25, {TE::Reduce, 25}}, {26, {TE::Reduce, 25}}, {27, {TE::Reduce, 25}}, {28, {TE::Reduce, 25}}, {29, {TE::Reduce, 25}}},
-    Row {{10, {TE::Reduce, 26}}, {13, {TE::Reduce, 26}}, {16, {TE::Reduce, 26}}, {17, {TE::Reduce, 26}}, {18, {TE::Reduce, 26}}, {19, {TE::Reduce, 26}}, {20, {TE::Reduce, 26}}, {21, {TE::Reduce, 26}}, {22, {TE::Reduce, 26}}, {23, {TE::Reduce, 26}}, {24, {TE::Reduce, 26}}, {25, {TE::Reduce, 26}}, {26, {TE::Reduce, 26}}, {27, {TE::Reduce, 26}}, {28, {TE::Reduce, 26}}, {29, {TE::Reduce, 26}}},
-    Row {{1, {TE::Transit, 55}}, {2, {TE::Transit, 3}}, {3, {TE::Transit, 7}}, {4, {TE::Transit, 5}}, {5, {TE::Transit, 4}}, {6, {TE::Transit, 6}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {11, {TE::Shift, 16}}, {13, {TE::Shift, 9}}, {15, {TE::Shift, 8}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{11, {TE::Reduce, 3}}, {12, {TE::Reduce, 3}}, {13, {TE::Reduce, 3}}, {15, {TE::Reduce, 3}}, {26, {TE::Reduce, 3}}, {28, {TE::Reduce, 3}}, {29, {TE::Reduce, 3}}, {31, {TE::Reduce, 3}}},
-    Row {{11, {TE::Reduce, 4}}, {12, {TE::Reduce, 4}}, {13, {TE::Reduce, 4}}, {15, {TE::Reduce, 4}}, {26, {TE::Reduce, 4}}, {28, {TE::Reduce, 4}}, {29, {TE::Reduce, 4}}, {31, {TE::Reduce, 4}}},
-    Row {{11, {TE::Reduce, 5}}, {12, {TE::Reduce, 5}}, {13, {TE::Reduce, 5}}, {15, {TE::Reduce, 5}}, {26, {TE::Reduce, 5}}, {28, {TE::Reduce, 5}}, {29, {TE::Reduce, 5}}, {31, {TE::Reduce, 5}}},
-    Row {{11, {TE::Reduce, 6}}, {12, {TE::Reduce, 6}}, {13, {TE::Reduce, 6}}, {15, {TE::Reduce, 6}}, {26, {TE::Reduce, 6}}, {28, {TE::Reduce, 6}}, {29, {TE::Reduce, 6}}, {31, {TE::Reduce, 6}}},
-    Row {{7, {TE::Transit, 29}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{7, {TE::Transit, 37}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{7, {TE::Transit, 39}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{7, {TE::Transit, 40}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{7, {TE::Transit, 41}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{7, {TE::Transit, 42}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{7, {TE::Transit, 43}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{7, {TE::Transit, 44}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{10, {TE::Reduce, 11}}, {13, {TE::Reduce, 11}}, {16, {TE::Reduce, 11}}, {17, {TE::Reduce, 11}}, {18, {TE::Reduce, 11}}, {19, {TE::Reduce, 11}}, {20, {TE::Reduce, 11}}, {21, {TE::Reduce, 11}}, {22, {TE::Reduce, 11}}, {23, {TE::Reduce, 11}}, {24, {TE::Shift, 31}}, {25, {TE::Shift, 32}}, {26, {TE::Reduce, 11}}, {27, {TE::Reduce, 11}}, {28, {TE::Reduce, 11}}, {29, {TE::Reduce, 11}}},
-    Row {{10, {TE::Reduce, 27}}, {13, {TE::Reduce, 27}}, {16, {TE::Reduce, 27}}, {17, {TE::Reduce, 27}}, {18, {TE::Reduce, 27}}, {19, {TE::Reduce, 27}}, {20, {TE::Reduce, 27}}, {21, {TE::Reduce, 27}}, {22, {TE::Reduce, 27}}, {23, {TE::Reduce, 27}}, {24, {TE::Reduce, 27}}, {25, {TE::Reduce, 27}}, {26, {TE::Reduce, 27}}, {27, {TE::Reduce, 27}}, {28, {TE::Reduce, 27}}, {29, {TE::Reduce, 27}}},
-    Row {{8, {TE::Transit, 33}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{8, {TE::Transit, 38}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{10, {TE::Reduce, 20}}, {13, {TE::Reduce, 20}}, {16, {TE::Reduce, 20}}, {17, {TE::Reduce, 20}}, {18, {TE::Reduce, 20}}, {19, {TE::Reduce, 20}}, {20, {TE::Reduce, 20}}, {21, {TE::Reduce, 20}}, {22, {TE::Reduce, 20}}, {23, {TE::Reduce, 20}}, {24, {TE::Reduce, 20}}, {25, {TE::Reduce, 20}}, {26, {TE::Reduce, 20}}, {27, {TE::Reduce, 20}}, {28, {TE::Reduce, 20}}, {29, {TE::Reduce, 20}}},
-    Row {{16, {TE::Shift, 21}}, {17, {TE::Shift, 22}}, {18, {TE::Shift, 23}}, {19, {TE::Shift, 24}}, {20, {TE::Shift, 25}}, {21, {TE::Shift, 26}}, {22, {TE::Shift, 27}}, {23, {TE::Shift, 28}}, {27, {TE::Shift, 36}}},
-    Row {{6, {TE::Transit, 45}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{10, {TE::Reduce, 24}}, {13, {TE::Reduce, 24}}, {16, {TE::Reduce, 24}}, {17, {TE::Reduce, 24}}, {18, {TE::Reduce, 24}}, {19, {TE::Reduce, 24}}, {20, {TE::Reduce, 24}}, {21, {TE::Reduce, 24}}, {22, {TE::Reduce, 24}}, {23, {TE::Reduce, 24}}, {24, {TE::Reduce, 24}}, {25, {TE::Reduce, 24}}, {26, {TE::Reduce, 24}}, {27, {TE::Reduce, 24}}, {28, {TE::Reduce, 24}}, {29, {TE::Reduce, 24}}},
-    Row {{10, {TE::Reduce, 12}}, {13, {TE::Reduce, 12}}, {16, {TE::Reduce, 12}}, {17, {TE::Reduce, 12}}, {18, {TE::Reduce, 12}}, {19, {TE::Reduce, 12}}, {20, {TE::Reduce, 12}}, {21, {TE::Reduce, 12}}, {22, {TE::Reduce, 12}}, {23, {TE::Reduce, 12}}, {24, {TE::Shift, 31}}, {25, {TE::Shift, 32}}, {26, {TE::Reduce, 12}}, {27, {TE::Reduce, 12}}, {28, {TE::Reduce, 12}}, {29, {TE::Reduce, 12}}},
-    Row {{10, {TE::Reduce, 21}}, {13, {TE::Reduce, 21}}, {16, {TE::Reduce, 21}}, {17, {TE::Reduce, 21}}, {18, {TE::Reduce, 21}}, {19, {TE::Reduce, 21}}, {20, {TE::Reduce, 21}}, {21, {TE::Reduce, 21}}, {22, {TE::Reduce, 21}}, {23, {TE::Reduce, 21}}, {24, {TE::Reduce, 21}}, {25, {TE::Reduce, 21}}, {26, {TE::Reduce, 21}}, {27, {TE::Reduce, 21}}, {28, {TE::Reduce, 21}}, {29, {TE::Reduce, 21}}},
-    Row {{10, {TE::Reduce, 13}}, {13, {TE::Reduce, 13}}, {16, {TE::Reduce, 13}}, {17, {TE::Reduce, 13}}, {18, {TE::Reduce, 13}}, {19, {TE::Reduce, 13}}, {20, {TE::Reduce, 13}}, {21, {TE::Reduce, 13}}, {22, {TE::Reduce, 13}}, {23, {TE::Reduce, 13}}, {24, {TE::Shift, 31}}, {25, {TE::Shift, 32}}, {26, {TE::Reduce, 13}}, {27, {TE::Reduce, 13}}, {28, {TE::Reduce, 13}}, {29, {TE::Reduce, 13}}},
-    Row {{10, {TE::Reduce, 14}}, {13, {TE::Reduce, 14}}, {16, {TE::Reduce, 14}}, {17, {TE::Reduce, 14}}, {18, {TE::Reduce, 14}}, {19, {TE::Reduce, 14}}, {20, {TE::Reduce, 14}}, {21, {TE::Reduce, 14}}, {22, {TE::Reduce, 14}}, {23, {TE::Reduce, 14}}, {24, {TE::Shift, 31}}, {25, {TE::Shift, 32}}, {26, {TE::Reduce, 14}}, {27, {TE::Reduce, 14}}, {28, {TE::Reduce, 14}}, {29, {TE::Reduce, 14}}},
-    Row {{10, {TE::Reduce, 15}}, {13, {TE::Reduce, 15}}, {16, {TE::Reduce, 15}}, {17, {TE::Reduce, 15}}, {18, {TE::Reduce, 15}}, {19, {TE::Reduce, 15}}, {20, {TE::Reduce, 15}}, {21, {TE::Reduce, 15}}, {22, {TE::Reduce, 15}}, {23, {TE::Reduce, 15}}, {24, {TE::Shift, 31}}, {25, {TE::Shift, 32}}, {26, {TE::Reduce, 15}}, {27, {TE::Reduce, 15}}, {28, {TE::Reduce, 15}}, {29, {TE::Reduce, 15}}},
-    Row {{10, {TE::Reduce, 16}}, {13, {TE::Reduce, 16}}, {16, {TE::Reduce, 16}}, {17, {TE::Reduce, 16}}, {18, {TE::Reduce, 16}}, {19, {TE::Reduce, 16}}, {20, {TE::Reduce, 16}}, {21, {TE::Reduce, 16}}, {22, {TE::Reduce, 16}}, {23, {TE::Reduce, 16}}, {24, {TE::Shift, 31}}, {25, {TE::Shift, 32}}, {26, {TE::Reduce, 16}}, {27, {TE::Reduce, 16}}, {28, {TE::Reduce, 16}}, {29, {TE::Reduce, 16}}},
-    Row {{10, {TE::Reduce, 17}}, {13, {TE::Reduce, 17}}, {16, {TE::Reduce, 17}}, {17, {TE::Reduce, 17}}, {18, {TE::Reduce, 17}}, {19, {TE::Reduce, 17}}, {20, {TE::Reduce, 17}}, {21, {TE::Reduce, 17}}, {22, {TE::Reduce, 17}}, {23, {TE::Reduce, 17}}, {24, {TE::Shift, 31}}, {25, {TE::Shift, 32}}, {26, {TE::Reduce, 17}}, {27, {TE::Reduce, 17}}, {28, {TE::Reduce, 17}}, {29, {TE::Reduce, 17}}},
-    Row {{10, {TE::Reduce, 18}}, {13, {TE::Reduce, 18}}, {16, {TE::Reduce, 18}}, {17, {TE::Reduce, 18}}, {18, {TE::Reduce, 18}}, {19, {TE::Reduce, 18}}, {20, {TE::Reduce, 18}}, {21, {TE::Reduce, 18}}, {22, {TE::Reduce, 18}}, {23, {TE::Reduce, 18}}, {24, {TE::Shift, 31}}, {25, {TE::Shift, 32}}, {26, {TE::Reduce, 18}}, {27, {TE::Reduce, 18}}, {28, {TE::Reduce, 18}}, {29, {TE::Reduce, 18}}},
-    Row {{6, {TE::Transit, 46}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {16, {TE::Shift, 21}}, {17, {TE::Shift, 22}}, {18, {TE::Shift, 23}}, {19, {TE::Shift, 24}}, {20, {TE::Shift, 25}}, {21, {TE::Shift, 26}}, {22, {TE::Shift, 27}}, {23, {TE::Shift, 28}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{6, {TE::Transit, 48}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {16, {TE::Shift, 21}}, {17, {TE::Shift, 22}}, {18, {TE::Shift, 23}}, {19, {TE::Shift, 24}}, {20, {TE::Shift, 25}}, {21, {TE::Shift, 26}}, {22, {TE::Shift, 27}}, {23, {TE::Shift, 28}}, {26, {TE::Shift, 13}}, {27, {TE::Shift, 47}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{10, {TE::Reduce, 28}}, {13, {TE::Reduce, 28}}, {16, {TE::Reduce, 28}}, {17, {TE::Reduce, 28}}, {18, {TE::Reduce, 28}}, {19, {TE::Reduce, 28}}, {20, {TE::Reduce, 28}}, {21, {TE::Reduce, 28}}, {22, {TE::Reduce, 28}}, {23, {TE::Reduce, 28}}, {24, {TE::Reduce, 28}}, {25, {TE::Reduce, 28}}, {26, {TE::Reduce, 28}}, {27, {TE::Reduce, 28}}, {28, {TE::Reduce, 28}}, {29, {TE::Reduce, 28}}},
-    Row {{16, {TE::Shift, 21}}, {17, {TE::Shift, 22}}, {18, {TE::Shift, 23}}, {19, {TE::Shift, 24}}, {20, {TE::Shift, 25}}, {21, {TE::Shift, 26}}, {22, {TE::Shift, 27}}, {23, {TE::Shift, 28}}, {27, {TE::Shift, 49}}},
-    Row {{10, {TE::Reduce, 29}}, {13, {TE::Reduce, 29}}, {16, {TE::Reduce, 29}}, {17, {TE::Reduce, 29}}, {18, {TE::Reduce, 29}}, {19, {TE::Reduce, 29}}, {20, {TE::Reduce, 29}}, {21, {TE::Reduce, 29}}, {22, {TE::Reduce, 29}}, {23, {TE::Reduce, 29}}, {24, {TE::Reduce, 29}}, {25, {TE::Reduce, 29}}, {26, {TE::Reduce, 29}}, {27, {TE::Reduce, 29}}, {28, {TE::Reduce, 29}}, {29, {TE::Reduce, 29}}},
-    Row {{14, {TE::Shift, 51}}},
-    Row {{6, {TE::Transit, 52}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{10, {TE::Reduce, 10}}, {16, {TE::Shift, 21}}, {17, {TE::Shift, 22}}, {18, {TE::Shift, 23}}, {19, {TE::Shift, 24}}, {20, {TE::Shift, 25}}, {21, {TE::Shift, 26}}, {22, {TE::Shift, 27}}, {23, {TE::Shift, 28}}},
-    Row {{6, {TE::Transit, 54}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {13, {TE::Shift, 30}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{10, {TE::Reduce, 9}}, {16, {TE::Shift, 21}}, {17, {TE::Shift, 22}}, {18, {TE::Shift, 23}}, {19, {TE::Shift, 24}}, {20, {TE::Shift, 25}}, {21, {TE::Shift, 26}}, {22, {TE::Shift, 27}}, {23, {TE::Shift, 28}}},
-    Row {{2, {TE::Transit, 17}}, {3, {TE::Transit, 7}}, {4, {TE::Transit, 5}}, {5, {TE::Transit, 4}}, {6, {TE::Transit, 6}}, {7, {TE::Transit, 10}}, {8, {TE::Transit, 11}}, {9, {TE::Transit, 12}}, {11, {TE::Shift, 16}}, {12, {TE::Shift, 56}}, {13, {TE::Shift, 9}}, {15, {TE::Shift, 8}}, {26, {TE::Shift, 13}}, {28, {TE::Shift, 14}}, {29, {TE::Shift, 15}}},
-    Row {{11, {TE::Reduce, 8}}, {12, {TE::Reduce, 8}}, {13, {TE::Reduce, 8}}, {15, {TE::Reduce, 8}}, {26, {TE::Reduce, 8}}, {28, {TE::Reduce, 8}}, {29, {TE::Reduce, 8}}, {31, {TE::Reduce, 8}}}
+    Row {{0, {TE::Transit, 1}}, {1, {TE::Transit, 2}}, {2, {TE::Transit, 3}}, {3, {TE::Transit, 4}}, {4, {TE::Transit, 5}}, {5, {TE::Transit, 6}}, {6, {TE::Transit, 21}}, {7, {TE::Transit, 7}}, {8, {TE::Transit, 12}}, {9, {TE::Transit, 10}}, {10, {TE::Transit, 9}}, {11, {TE::Transit, 11}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {14, {TE::Shift, 8}}, {15, {TE::Shift, 17}}, {19, {TE::Shift, 20}}, {21, {TE::Shift, 14}}, {23, {TE::Shift, 13}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{36, {TE::Accept, 0}}},
+    Row {{2, {TE::Transit, 22}}, {3, {TE::Transit, 4}}, {4, {TE::Transit, 5}}, {5, {TE::Transit, 6}}, {6, {TE::Transit, 21}}, {7, {TE::Transit, 7}}, {8, {TE::Transit, 12}}, {9, {TE::Transit, 10}}, {10, {TE::Transit, 9}}, {11, {TE::Transit, 11}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {14, {TE::Shift, 8}}, {15, {TE::Shift, 17}}, {19, {TE::Shift, 20}}, {21, {TE::Shift, 14}}, {23, {TE::Shift, 13}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}, {36, {TE::Reduce, 1}}},
+    Row {{14, {TE::Reduce, 2}}, {15, {TE::Reduce, 2}}, {19, {TE::Reduce, 2}}, {20, {TE::Reduce, 2}}, {21, {TE::Reduce, 2}}, {23, {TE::Reduce, 2}}, {34, {TE::Reduce, 2}}, {35, {TE::Reduce, 2}}, {36, {TE::Reduce, 2}}},
+    Row {{14, {TE::Reduce, 4}}, {15, {TE::Reduce, 4}}, {19, {TE::Reduce, 4}}, {20, {TE::Reduce, 4}}, {21, {TE::Reduce, 4}}, {23, {TE::Reduce, 4}}, {34, {TE::Reduce, 4}}, {35, {TE::Reduce, 4}}, {36, {TE::Reduce, 4}}},
+    Row {{14, {TE::Reduce, 5}}, {15, {TE::Reduce, 5}}, {19, {TE::Reduce, 5}}, {20, {TE::Reduce, 5}}, {21, {TE::Reduce, 5}}, {23, {TE::Reduce, 5}}, {34, {TE::Reduce, 5}}, {35, {TE::Reduce, 5}}, {36, {TE::Reduce, 5}}},
+    Row {{14, {TE::Reduce, 6}}, {15, {TE::Reduce, 6}}, {17, {TE::Reduce, 6}}, {19, {TE::Reduce, 6}}, {20, {TE::Reduce, 6}}, {21, {TE::Reduce, 6}}, {23, {TE::Reduce, 6}}, {34, {TE::Reduce, 6}}, {35, {TE::Reduce, 6}}, {36, {TE::Reduce, 6}}},
+    Row {{14, {TE::Reduce, 7}}, {15, {TE::Reduce, 7}}, {17, {TE::Reduce, 7}}, {19, {TE::Reduce, 7}}, {20, {TE::Reduce, 7}}, {21, {TE::Reduce, 7}}, {23, {TE::Reduce, 7}}, {34, {TE::Reduce, 7}}, {35, {TE::Reduce, 7}}, {36, {TE::Reduce, 7}}},
+    Row {{15, {TE::Shift, 23}}},
+    Row {{18, {TE::Shift, 44}}},
+    Row {{18, {TE::Shift, 45}}},
+    Row {{18, {TE::Shift, 46}}, {24, {TE::Shift, 27}}, {25, {TE::Shift, 28}}, {26, {TE::Shift, 29}}, {27, {TE::Shift, 30}}, {28, {TE::Shift, 31}}, {29, {TE::Shift, 32}}, {30, {TE::Shift, 33}}, {31, {TE::Shift, 34}}},
+    Row {{14, {TE::Reduce, 14}}, {15, {TE::Reduce, 14}}, {17, {TE::Reduce, 14}}, {19, {TE::Reduce, 14}}, {20, {TE::Reduce, 14}}, {21, {TE::Reduce, 14}}, {23, {TE::Reduce, 14}}, {34, {TE::Reduce, 14}}, {35, {TE::Reduce, 14}}, {36, {TE::Reduce, 14}}},
+    Row {{21, {TE::Shift, 61}}},
+    Row {{18, {TE::Reduce, 33}}, {22, {TE::Shift, 64}}, {24, {TE::Reduce, 33}}, {25, {TE::Reduce, 33}}, {26, {TE::Reduce, 33}}, {27, {TE::Reduce, 33}}, {28, {TE::Reduce, 33}}, {29, {TE::Reduce, 33}}, {30, {TE::Reduce, 33}}, {31, {TE::Reduce, 33}}, {32, {TE::Reduce, 33}}, {33, {TE::Reduce, 33}}},
+    Row {{16, {TE::Reduce, 26}}, {18, {TE::Reduce, 26}}, {24, {TE::Reduce, 26}}, {25, {TE::Reduce, 26}}, {26, {TE::Reduce, 26}}, {27, {TE::Reduce, 26}}, {28, {TE::Reduce, 26}}, {29, {TE::Reduce, 26}}, {30, {TE::Reduce, 26}}, {31, {TE::Reduce, 26}}, {32, {TE::Shift, 48}}, {33, {TE::Shift, 49}}},
+    Row {{16, {TE::Reduce, 29}}, {18, {TE::Reduce, 29}}, {24, {TE::Reduce, 29}}, {25, {TE::Reduce, 29}}, {26, {TE::Reduce, 29}}, {27, {TE::Reduce, 29}}, {28, {TE::Reduce, 29}}, {29, {TE::Reduce, 29}}, {30, {TE::Reduce, 29}}, {31, {TE::Reduce, 29}}, {32, {TE::Reduce, 29}}, {33, {TE::Reduce, 29}}},
+    Row {{11, {TE::Transit, 51}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{16, {TE::Reduce, 31}}, {18, {TE::Reduce, 31}}, {24, {TE::Reduce, 31}}, {25, {TE::Reduce, 31}}, {26, {TE::Reduce, 31}}, {27, {TE::Reduce, 31}}, {28, {TE::Reduce, 31}}, {29, {TE::Reduce, 31}}, {30, {TE::Reduce, 31}}, {31, {TE::Reduce, 31}}, {32, {TE::Reduce, 31}}, {33, {TE::Reduce, 31}}},
+    Row {{16, {TE::Reduce, 32}}, {18, {TE::Reduce, 32}}, {24, {TE::Reduce, 32}}, {25, {TE::Reduce, 32}}, {26, {TE::Reduce, 32}}, {27, {TE::Reduce, 32}}, {28, {TE::Reduce, 32}}, {29, {TE::Reduce, 32}}, {30, {TE::Reduce, 32}}, {31, {TE::Reduce, 32}}, {32, {TE::Reduce, 32}}, {33, {TE::Reduce, 32}}},
+    Row {{1, {TE::Transit, 66}}, {2, {TE::Transit, 3}}, {3, {TE::Transit, 4}}, {4, {TE::Transit, 5}}, {5, {TE::Transit, 6}}, {6, {TE::Transit, 21}}, {7, {TE::Transit, 7}}, {8, {TE::Transit, 12}}, {9, {TE::Transit, 10}}, {10, {TE::Transit, 9}}, {11, {TE::Transit, 11}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {14, {TE::Shift, 8}}, {15, {TE::Shift, 17}}, {19, {TE::Shift, 20}}, {21, {TE::Shift, 14}}, {23, {TE::Shift, 13}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{14, {TE::Reduce, 8}}, {15, {TE::Reduce, 8}}, {19, {TE::Reduce, 8}}, {20, {TE::Reduce, 8}}, {21, {TE::Reduce, 8}}, {23, {TE::Reduce, 8}}, {34, {TE::Reduce, 8}}, {35, {TE::Reduce, 8}}, {36, {TE::Reduce, 8}}},
+    Row {{14, {TE::Reduce, 3}}, {15, {TE::Reduce, 3}}, {19, {TE::Reduce, 3}}, {20, {TE::Reduce, 3}}, {21, {TE::Reduce, 3}}, {23, {TE::Reduce, 3}}, {34, {TE::Reduce, 3}}, {35, {TE::Reduce, 3}}, {36, {TE::Reduce, 3}}},
+    Row {{11, {TE::Transit, 24}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{16, {TE::Shift, 26}}, {24, {TE::Shift, 27}}, {25, {TE::Shift, 28}}, {26, {TE::Shift, 29}}, {27, {TE::Shift, 30}}, {28, {TE::Shift, 31}}, {29, {TE::Shift, 32}}, {30, {TE::Shift, 33}}, {31, {TE::Shift, 34}}},
+    Row {{16, {TE::Reduce, 33}}, {18, {TE::Reduce, 33}}, {24, {TE::Reduce, 33}}, {25, {TE::Reduce, 33}}, {26, {TE::Reduce, 33}}, {27, {TE::Reduce, 33}}, {28, {TE::Reduce, 33}}, {29, {TE::Reduce, 33}}, {30, {TE::Reduce, 33}}, {31, {TE::Reduce, 33}}, {32, {TE::Reduce, 33}}, {33, {TE::Reduce, 33}}},
+    Row {{2, {TE::Transit, 36}}, {3, {TE::Transit, 35}}, {4, {TE::Transit, 5}}, {5, {TE::Transit, 6}}, {6, {TE::Transit, 21}}, {7, {TE::Transit, 7}}, {8, {TE::Transit, 12}}, {9, {TE::Transit, 10}}, {10, {TE::Transit, 9}}, {11, {TE::Transit, 11}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {14, {TE::Shift, 8}}, {15, {TE::Shift, 17}}, {19, {TE::Shift, 20}}, {21, {TE::Shift, 14}}, {23, {TE::Shift, 13}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{12, {TE::Transit, 47}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{12, {TE::Transit, 53}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{12, {TE::Transit, 55}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{12, {TE::Transit, 56}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{12, {TE::Transit, 57}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{12, {TE::Transit, 58}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{12, {TE::Transit, 59}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{12, {TE::Transit, 60}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{14, {TE::Reduce, 4}}, {15, {TE::Reduce, 4}}, {17, {TE::Shift, 37}}, {19, {TE::Reduce, 4}}, {20, {TE::Reduce, 4}}, {21, {TE::Reduce, 4}}, {23, {TE::Reduce, 4}}, {34, {TE::Reduce, 4}}, {35, {TE::Reduce, 4}}, {36, {TE::Reduce, 4}}},
+    Row {{14, {TE::Reduce, 10}}, {15, {TE::Reduce, 10}}, {19, {TE::Reduce, 10}}, {20, {TE::Reduce, 10}}, {21, {TE::Reduce, 10}}, {23, {TE::Reduce, 10}}, {34, {TE::Reduce, 10}}, {35, {TE::Reduce, 10}}, {36, {TE::Reduce, 10}}},
+    Row {{3, {TE::Transit, 38}}, {5, {TE::Transit, 6}}, {7, {TE::Transit, 7}}, {8, {TE::Transit, 12}}, {9, {TE::Transit, 10}}, {10, {TE::Transit, 9}}, {11, {TE::Transit, 11}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {14, {TE::Shift, 39}}, {15, {TE::Shift, 17}}, {19, {TE::Shift, 20}}, {21, {TE::Shift, 14}}, {23, {TE::Shift, 13}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{14, {TE::Reduce, 9}}, {15, {TE::Reduce, 9}}, {17, {TE::Reduce, 9}}, {19, {TE::Reduce, 9}}, {20, {TE::Reduce, 9}}, {21, {TE::Reduce, 9}}, {23, {TE::Reduce, 9}}, {34, {TE::Reduce, 9}}, {35, {TE::Reduce, 9}}, {36, {TE::Reduce, 9}}},
+    Row {{15, {TE::Shift, 40}}},
+    Row {{11, {TE::Transit, 41}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{16, {TE::Shift, 42}}, {24, {TE::Shift, 27}}, {25, {TE::Shift, 28}}, {26, {TE::Shift, 29}}, {27, {TE::Shift, 30}}, {28, {TE::Shift, 31}}, {29, {TE::Shift, 32}}, {30, {TE::Shift, 33}}, {31, {TE::Shift, 34}}},
+    Row {{3, {TE::Transit, 43}}, {5, {TE::Transit, 6}}, {7, {TE::Transit, 7}}, {8, {TE::Transit, 12}}, {9, {TE::Transit, 10}}, {10, {TE::Transit, 9}}, {11, {TE::Transit, 11}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {14, {TE::Shift, 39}}, {15, {TE::Shift, 17}}, {19, {TE::Shift, 20}}, {21, {TE::Shift, 14}}, {23, {TE::Shift, 13}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{17, {TE::Shift, 37}}},
+    Row {{14, {TE::Reduce, 11}}, {15, {TE::Reduce, 11}}, {17, {TE::Reduce, 11}}, {19, {TE::Reduce, 11}}, {20, {TE::Reduce, 11}}, {21, {TE::Reduce, 11}}, {23, {TE::Reduce, 11}}, {34, {TE::Reduce, 11}}, {35, {TE::Reduce, 11}}, {36, {TE::Reduce, 11}}},
+    Row {{14, {TE::Reduce, 12}}, {15, {TE::Reduce, 12}}, {17, {TE::Reduce, 12}}, {19, {TE::Reduce, 12}}, {20, {TE::Reduce, 12}}, {21, {TE::Reduce, 12}}, {23, {TE::Reduce, 12}}, {34, {TE::Reduce, 12}}, {35, {TE::Reduce, 12}}, {36, {TE::Reduce, 12}}},
+    Row {{14, {TE::Reduce, 13}}, {15, {TE::Reduce, 13}}, {17, {TE::Reduce, 13}}, {19, {TE::Reduce, 13}}, {20, {TE::Reduce, 13}}, {21, {TE::Reduce, 13}}, {23, {TE::Reduce, 13}}, {34, {TE::Reduce, 13}}, {35, {TE::Reduce, 13}}, {36, {TE::Reduce, 13}}},
+    Row {{16, {TE::Reduce, 18}}, {18, {TE::Reduce, 18}}, {24, {TE::Reduce, 18}}, {25, {TE::Reduce, 18}}, {26, {TE::Reduce, 18}}, {27, {TE::Reduce, 18}}, {28, {TE::Reduce, 18}}, {29, {TE::Reduce, 18}}, {30, {TE::Reduce, 18}}, {31, {TE::Reduce, 18}}, {32, {TE::Shift, 48}}, {33, {TE::Shift, 49}}},
+    Row {{13, {TE::Transit, 50}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{13, {TE::Transit, 54}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{16, {TE::Reduce, 27}}, {18, {TE::Reduce, 27}}, {24, {TE::Reduce, 27}}, {25, {TE::Reduce, 27}}, {26, {TE::Reduce, 27}}, {27, {TE::Reduce, 27}}, {28, {TE::Reduce, 27}}, {29, {TE::Reduce, 27}}, {30, {TE::Reduce, 27}}, {31, {TE::Reduce, 27}}, {32, {TE::Reduce, 27}}, {33, {TE::Reduce, 27}}},
+    Row {{16, {TE::Shift, 52}}, {24, {TE::Shift, 27}}, {25, {TE::Shift, 28}}, {26, {TE::Shift, 29}}, {27, {TE::Shift, 30}}, {28, {TE::Shift, 31}}, {29, {TE::Shift, 32}}, {30, {TE::Shift, 33}}, {31, {TE::Shift, 34}}},
+    Row {{16, {TE::Reduce, 30}}, {18, {TE::Reduce, 30}}, {24, {TE::Reduce, 30}}, {25, {TE::Reduce, 30}}, {26, {TE::Reduce, 30}}, {27, {TE::Reduce, 30}}, {28, {TE::Reduce, 30}}, {29, {TE::Reduce, 30}}, {30, {TE::Reduce, 30}}, {31, {TE::Reduce, 30}}, {32, {TE::Reduce, 30}}, {33, {TE::Reduce, 30}}},
+    Row {{16, {TE::Reduce, 19}}, {18, {TE::Reduce, 19}}, {24, {TE::Reduce, 19}}, {25, {TE::Reduce, 19}}, {26, {TE::Reduce, 19}}, {27, {TE::Reduce, 19}}, {28, {TE::Reduce, 19}}, {29, {TE::Reduce, 19}}, {30, {TE::Reduce, 19}}, {31, {TE::Reduce, 19}}, {32, {TE::Shift, 48}}, {33, {TE::Shift, 49}}},
+    Row {{16, {TE::Reduce, 28}}, {18, {TE::Reduce, 28}}, {24, {TE::Reduce, 28}}, {25, {TE::Reduce, 28}}, {26, {TE::Reduce, 28}}, {27, {TE::Reduce, 28}}, {28, {TE::Reduce, 28}}, {29, {TE::Reduce, 28}}, {30, {TE::Reduce, 28}}, {31, {TE::Reduce, 28}}, {32, {TE::Reduce, 28}}, {33, {TE::Reduce, 28}}},
+    Row {{16, {TE::Reduce, 20}}, {18, {TE::Reduce, 20}}, {24, {TE::Reduce, 20}}, {25, {TE::Reduce, 20}}, {26, {TE::Reduce, 20}}, {27, {TE::Reduce, 20}}, {28, {TE::Reduce, 20}}, {29, {TE::Reduce, 20}}, {30, {TE::Reduce, 20}}, {31, {TE::Reduce, 20}}, {32, {TE::Shift, 48}}, {33, {TE::Shift, 49}}},
+    Row {{16, {TE::Reduce, 21}}, {18, {TE::Reduce, 21}}, {24, {TE::Reduce, 21}}, {25, {TE::Reduce, 21}}, {26, {TE::Reduce, 21}}, {27, {TE::Reduce, 21}}, {28, {TE::Reduce, 21}}, {29, {TE::Reduce, 21}}, {30, {TE::Reduce, 21}}, {31, {TE::Reduce, 21}}, {32, {TE::Shift, 48}}, {33, {TE::Shift, 49}}},
+    Row {{16, {TE::Reduce, 22}}, {18, {TE::Reduce, 22}}, {24, {TE::Reduce, 22}}, {25, {TE::Reduce, 22}}, {26, {TE::Reduce, 22}}, {27, {TE::Reduce, 22}}, {28, {TE::Reduce, 22}}, {29, {TE::Reduce, 22}}, {30, {TE::Reduce, 22}}, {31, {TE::Reduce, 22}}, {32, {TE::Shift, 48}}, {33, {TE::Shift, 49}}},
+    Row {{16, {TE::Reduce, 23}}, {18, {TE::Reduce, 23}}, {24, {TE::Reduce, 23}}, {25, {TE::Reduce, 23}}, {26, {TE::Reduce, 23}}, {27, {TE::Reduce, 23}}, {28, {TE::Reduce, 23}}, {29, {TE::Reduce, 23}}, {30, {TE::Reduce, 23}}, {31, {TE::Reduce, 23}}, {32, {TE::Shift, 48}}, {33, {TE::Shift, 49}}},
+    Row {{16, {TE::Reduce, 24}}, {18, {TE::Reduce, 24}}, {24, {TE::Reduce, 24}}, {25, {TE::Reduce, 24}}, {26, {TE::Reduce, 24}}, {27, {TE::Reduce, 24}}, {28, {TE::Reduce, 24}}, {29, {TE::Reduce, 24}}, {30, {TE::Reduce, 24}}, {31, {TE::Reduce, 24}}, {32, {TE::Shift, 48}}, {33, {TE::Shift, 49}}},
+    Row {{16, {TE::Reduce, 25}}, {18, {TE::Reduce, 25}}, {24, {TE::Reduce, 25}}, {25, {TE::Reduce, 25}}, {26, {TE::Reduce, 25}}, {27, {TE::Reduce, 25}}, {28, {TE::Reduce, 25}}, {29, {TE::Reduce, 25}}, {30, {TE::Reduce, 25}}, {31, {TE::Reduce, 25}}, {32, {TE::Shift, 48}}, {33, {TE::Shift, 49}}},
+    Row {{22, {TE::Shift, 62}}},
+    Row {{11, {TE::Transit, 63}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{18, {TE::Reduce, 17}}, {24, {TE::Shift, 27}}, {25, {TE::Shift, 28}}, {26, {TE::Shift, 29}}, {27, {TE::Shift, 30}}, {28, {TE::Shift, 31}}, {29, {TE::Shift, 32}}, {30, {TE::Shift, 33}}, {31, {TE::Shift, 34}}},
+    Row {{11, {TE::Transit, 65}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {15, {TE::Shift, 17}}, {21, {TE::Shift, 25}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{18, {TE::Reduce, 16}}, {24, {TE::Shift, 27}}, {25, {TE::Shift, 28}}, {26, {TE::Shift, 29}}, {27, {TE::Shift, 30}}, {28, {TE::Shift, 31}}, {29, {TE::Shift, 32}}, {30, {TE::Shift, 33}}, {31, {TE::Shift, 34}}},
+    Row {{2, {TE::Transit, 22}}, {3, {TE::Transit, 4}}, {4, {TE::Transit, 5}}, {5, {TE::Transit, 6}}, {6, {TE::Transit, 21}}, {7, {TE::Transit, 7}}, {8, {TE::Transit, 12}}, {9, {TE::Transit, 10}}, {10, {TE::Transit, 9}}, {11, {TE::Transit, 11}}, {12, {TE::Transit, 15}}, {13, {TE::Transit, 16}}, {14, {TE::Shift, 8}}, {15, {TE::Shift, 17}}, {19, {TE::Shift, 20}}, {20, {TE::Shift, 67}}, {21, {TE::Shift, 14}}, {23, {TE::Shift, 13}}, {34, {TE::Shift, 18}}, {35, {TE::Shift, 19}}},
+    Row {{14, {TE::Reduce, 15}}, {15, {TE::Reduce, 15}}, {17, {TE::Reduce, 15}}, {19, {TE::Reduce, 15}}, {20, {TE::Reduce, 15}}, {21, {TE::Reduce, 15}}, {23, {TE::Reduce, 15}}, {34, {TE::Reduce, 15}}, {35, {TE::Reduce, 15}}, {36, {TE::Reduce, 15}}}
 };
 // clang-format on
 

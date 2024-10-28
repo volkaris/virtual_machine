@@ -13,13 +13,13 @@ protected:
         delete _vm;
     }
 
-    vm* _vm;
+    vm *_vm;
 };
 
 // Test 1: If condition is false (5 > 10)
 TEST_F(VmTest, IfConditionFalse) {
     auto result = _vm->exec(R"(
-        (if (5 > 10) 1 2);
+        if (5 > 10) {1;} else {2;}
     )");
 
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
@@ -29,7 +29,7 @@ TEST_F(VmTest, IfConditionFalse) {
 // Test 2: If condition is true (10 > 5)
 TEST_F(VmTest, IfConditionTrue) {
     auto result = _vm->exec(R"(
-        (if (10 > 5) 1 2);
+        if (10 > 5) {1;} else {2;}
     )");
 
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
@@ -39,10 +39,11 @@ TEST_F(VmTest, IfConditionTrue) {
 // Test 3: Nested if expressions
 TEST_F(VmTest, NestedIfExpressions) {
     auto result = _vm->exec(R"(
-        (if (5 > 3)
-            (if (2 > 1) 100 200)
-            (if (3 > 2) 300 400)
-        );
+        if (5 > 3) {
+            if (2 > 1) {100;} else {200;} }
+else {
+            if (3 > 2) {300;} else {400;}
+        }
     )");
 
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
@@ -52,10 +53,10 @@ TEST_F(VmTest, NestedIfExpressions) {
 // Test 4: Multiple if expressions in sequence
 TEST_F(VmTest, MultipleIfExpressions) {
     auto result1 = _vm->exec(R"(
-        (if (1 == 1) 10 20);
+        if (1 == 1) {10;} else { 20;}
     )");
     auto result2 = _vm->exec(R"(
-        (if (2 == 3) 30 40);
+        if(2 == 3) {30;} else{40;}
     )");
 
     EXPECT_TRUE(IS_NUMBER(result1)) << "Expected result1 to be a number.";
@@ -68,10 +69,11 @@ TEST_F(VmTest, MultipleIfExpressions) {
 // Test 5: Complex expressions in condition and branches
 TEST_F(VmTest, ComplexExpressions) {
     auto result = _vm->exec(R"(
-        (if ((5 + 5) == (2 * 5))
-            (10 * 10)
-            (20 * 20)
-        );
+        if ((5 + 5) == (2 * 5)) {
+            10 * 10;}
+else {
+            20 * 20;
+      }
     )");
 
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
@@ -81,7 +83,7 @@ TEST_F(VmTest, ComplexExpressions) {
 // Test 6: If with boolean literals
 TEST_F(VmTest, IfWithBooleanLiterals) {
     auto result = _vm->exec(R"(
-        (if true 1 2);
+        if (true) {1;}  else {2;}
     )");
 
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
@@ -91,7 +93,7 @@ TEST_F(VmTest, IfWithBooleanLiterals) {
 // Test 7: If with string comparison
 TEST_F(VmTest, IfWithStringComparison) {
     auto result = _vm->exec(R"(
-        (if ("hello" == "hello") "yes" "no");
+        if ("hello" == "hello") {"yes";} else{"no";}
     )");
 
     EXPECT_TRUE(IS_STRING(result)) << "Expected result to be a string.";
@@ -101,16 +103,15 @@ TEST_F(VmTest, IfWithStringComparison) {
 // Test 8: Chain of if expressions
 TEST_F(VmTest, ChainOfIfExpressions) {
     auto result = _vm->exec(R"(
-        (if false
-            1
-            (if false
-                2
-                (if true
-                    3
-                    4
-                )
-            )
-        );
+        if (false)
+            {1;}
+        else { if (false)
+                {
+                    2; }
+                if (true)
+                    {3;}
+                    else{ 4;}
+                }
     )");
 
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
@@ -120,8 +121,8 @@ TEST_F(VmTest, ChainOfIfExpressions) {
 // Test 9: Division by Zero (Expected to throw)
 TEST_F(VmTest, DivisionByZero) {
     EXPECT_THROW({
-        _vm->exec("(5 / 0);");
-    }, std::exception); // Replace with specific exception if available
+                 _vm->exec("(5 / 0);");
+                 }, std::exception); // Replace with specific exception if available
 }
 
 // Test 10: Simple Addition
@@ -145,10 +146,10 @@ TEST_F(VmTest, StringConcatenation) {
 // Test 12: Invalid Operation (String + Number)
 TEST_F(VmTest, InvalidOperationStringNumber) {
     EXPECT_THROW({
-        _vm->exec(R"(
+                 _vm->exec(R"(
             ("Hello" + 5);
         )");
-    }, std::exception); // Replace with specific exception if available
+                 }, std::exception); // Replace with specific exception if available
 }
 
 // Test 13: Greater Than Comparison
@@ -241,7 +242,7 @@ TEST_F(VmTest, DeconstructSum) {
 
 // Test 24: Deconstruct Program Difference By Assembler
 TEST_F(VmTest, DeconstructDifference) {
-    auto result = _vm->exec("(if (5 > 10) 1 2);");
+    auto result = _vm->exec("if (5 > 10) {1;} else{2;}");
 
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
     EXPECT_EQ(AS_NUMBER(result), 2) << "Expected result to be 2.";
@@ -252,7 +253,7 @@ TEST_F(VmTest, VariableDeclarationAndUsage) {
     auto result = _vm->exec(R"(
         var x = 10;
         var y = 20;
-        (if (x > y) 1 2);
+        if (x > y) {1;} {2;}
     )");
 
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
@@ -289,11 +290,11 @@ TEST_F(VmTest, VariableShadowing) {
 // Test 28: Undefined Variable Access (Should Throw)
 TEST_F(VmTest, UndefinedVariableAccess) {
     EXPECT_THROW({
-        _vm->exec(R"(
+                 _vm->exec(R"(
             var x = 10;
             y = x + 5; // 'y' is not declared
         )");
-    }, std::exception);
+                 }, std::exception);
 }
 
 // Test 29: Multiple Assignments
@@ -327,11 +328,11 @@ TEST_F(VmTest, AssignmentToGlobalVariable) {
 // Test 31: Assignment Before Declaration (Should Throw)
 TEST_F(VmTest, AssignmentBeforeDeclaration) {
     EXPECT_THROW({
-        _vm->exec(R"(
+                 _vm->exec(R"(
             a = 10; // 'a' is not declared yet
             var a = 5;
         )");
-    }, std::exception);
+                 }, std::exception);
 }
 
 // Test 32: Chained Variable Usage
@@ -351,22 +352,22 @@ TEST_F(VmTest, ChainedVariableUsage) {
 // Test 33: Redeclaration of Variable (Should Throw)
 TEST_F(VmTest, RedeclarationOfVariable) {
     EXPECT_THROW({
-        _vm->exec(R"(
+                 _vm->exec(R"(
             var x = 10;
             var x = 20; // Redeclaration of 'x' should throw an error
         )");
-    }, std::exception);
+                 }, std::exception);
 }
 
 
 // Test 34: Using Variable Before Declaration (Should Throw)
 TEST_F(VmTest, UsingVariableBeforeDeclaration) {
     EXPECT_THROW({
-        _vm->exec(R"(
+                 _vm->exec(R"(
             y = 10; // 'y' is used before declaration
             var y = 5;
         )");
-    }, std::exception);
+                 }, std::exception);
 }
 
 // Test 39: Variables in Inner Scope Do Not Affect Outer Scope
@@ -417,13 +418,13 @@ TEST_F(VmTest, VariableShadowing) {
 // Test 42: Variables Declared in a Scope Are Not Accessible Outside
 TEST_F(VmTest, VariablesNotAccessibleOutsideScope) {
     EXPECT_THROW({
-        _vm->exec(R"(
+                 _vm->exec(R"(
             {
                 var x = 10;
             }
             x; // 'x' should not be accessible here
         )");
-    }, std::exception);
+                 }, std::exception);
 }
 
 // Test 43: Assignment to Variable in Outer Scope from Inner Scope
@@ -481,13 +482,13 @@ TEST_F(VmTest, VariableShadowingInNestedScopes) {
 // Test 46: Variable Lifetime Ends with Scope
 TEST_F(VmTest, VariableLifetimeEndsWithScope) {
     EXPECT_THROW({
-        auto result = _vm->exec(R"(
+                 auto result = _vm->exec(R"(
             {
                 var x = 10;
             }
             x = 20; // Should throw an error, 'x' is out of scope
         )");
-    }, std::exception);
+                 }, std::exception);
 }
 
 // Test 47: Complex Scope Interactions
@@ -533,9 +534,195 @@ TEST_F(VmTest, AssignmentToShadowedVariable) {
 // Test 50: Re-declaring Variable in Same Scope (Should Throw)
 TEST_F(VmTest, RedeclaringVariableInSameScope) {
     EXPECT_THROW({
-        _vm->exec(R"(
+                 _vm->exec(R"(
             var x = 10;
             var x = 20; // Redeclaration in the same scope should throw an error
         )");
-    }, std::exception);
+                 }, std::exception);
 }
+
+// Test 51: Simple If Statement (Condition True)
+TEST_F(VmTest, SimpleIfStatementTrue) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        if (x == 5) {
+            x = x + 1;
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 6) << "Expected x to be 6.";
+}
+
+TEST_F(VmTest, SimpleIfStatementFalse) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        if (x != 5) {
+            x = x + 1;
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 5) << "Expected x to remain 5.";
+}
+
+TEST_F(VmTest, IfElseStatementTrue) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        if (x == 5) {
+            x = x + 1;
+        } else {
+            x = x - 1;
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 6) << "Expected x to be 6.";
+}
+
+TEST_F(VmTest, IfElseStatementFalse) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        if (x != 5) {
+            x = x + 1;
+        } else {
+            x = x - 1;
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 4) << "Expected x to be 4.";
+}
+
+TEST_F(VmTest, NestedIfStatements) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        var y = 10;
+        if (x < y) {
+            if (y == 10) {
+                x = x + y;
+            }
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 15) << "Expected x to be 15.";
+}
+
+TEST_F(VmTest, IfElseIfElseChain) {
+    auto result = _vm->exec(R"(
+        var x = 0;
+        if (x > 0) {
+            x = 1;
+        } else if (x == 0) {
+            x = 2;
+        } else {
+            x = 3;
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 2) << "Expected x to be 2.";
+}
+
+TEST_F(VmTest, IfWithoutBraces) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        if (x == 5)
+            x = x + 1;
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 6) << "Expected x to be 6.";
+}
+
+
+TEST_F(VmTest, IfElseWithoutBraces) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        if (x != 5)
+            x = x + 1;
+        else
+            x = x - 1;
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 4) << "Expected x to be 4.";
+}
+
+//IMPORTANT TEST!!! Dangling Else Correct Association
+TEST_F(VmTest, DanglingElseCorrectAssociation) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        if (x > 0)
+            if (x > 10)
+                x = x + 1;
+            else
+                x = x - 1;
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 4) << "Expected x to be 4.";
+}
+
+TEST_F(VmTest, IfInsideElseBlock) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        if (x > 10) {
+            x = x + 1;
+        } else {
+            if (x == 5) {
+                x = x * 2;
+            }
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 10) << "Expected x to be 10.";
+}
+
+
+TEST_F(VmTest, NestedIfElseStatements) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        if (x > 0) {
+            if (x < 10) {
+                x = x + 1;
+            } else {
+                x = x + 2;
+            }
+        } else {
+            x = x - 1;
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 6) << "Expected x to be 6.";
+}
+
+
+//todo implement logical operator ( or,and,not )
+/*TEST_F(VmTest, ComplexConditionInIf) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        var y = 10;
+        if ((x < y) && (y == 10) || (x == 0)) {
+            x = y / x;
+        }
+        x;
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 2) << "Expected x to be 2.";
+}*/
