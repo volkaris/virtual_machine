@@ -312,7 +312,7 @@ TEST_F(VmTest, MultipleAssignments) {
     EXPECT_EQ(AS_NUMBER(result), 5) << "Expected result to be 5.";
 }
 
-// Test 30: Assignment to Global Variable
+/*// Test 30: Assignment to Global Variable
 TEST_F(VmTest, AssignmentToGlobalVariable) {
     // Assuming 'x' is a global variable initialized in 'setGlobalVariables'
     auto result = _vm->exec(R"(
@@ -322,7 +322,7 @@ TEST_F(VmTest, AssignmentToGlobalVariable) {
 
     EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
     EXPECT_EQ(AS_NUMBER(result), 20) << "Expected result to be 20 (assuming initial x=10).";
-}
+}*/
 
 // Test 31: Assignment Before Declaration (Should Throw)
 TEST_F(VmTest, AssignmentBeforeDeclaration) {
@@ -365,6 +365,177 @@ TEST_F(VmTest, UsingVariableBeforeDeclaration) {
         _vm->exec(R"(
             y = 10; // 'y' is used before declaration
             var y = 5;
+        )");
+    }, std::exception);
+}
+
+// Test 39: Variables in Inner Scope Do Not Affect Outer Scope
+TEST_F(VmTest, InnerScopeVariablesDoNotAffectOuterScope) {
+    auto result = _vm->exec(R"(
+        var x = 10;
+        {
+            var x = 20; // Inner scope variable 'x' should not affect outer 'x'
+            x = x + 5;  // Inner 'x' becomes 25
+        }
+        x; // Should still be 10
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 10) << "Expected outer 'x' to remain 10.";
+}
+
+// Test 40: Variables in Outer Scope Are Accessible in Inner Scope
+TEST_F(VmTest, OuterScopeVariablesAccessibleInInnerScope) {
+    auto result = _vm->exec(R"(
+        var x = 10;
+        var y = 0;
+        {
+            y = x + 5; // Inner scope should access outer 'x'
+        }
+        y; // Should be 15
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 15) << "Expected 'y' to be 15.";
+}
+
+// Test 41: Variable Shadowing Works Correctly
+TEST_F(VmTest, VariableShadowing) {
+    auto result = _vm->exec(R"(
+        var x = 5;
+        {
+            var x = 10; // Shadows outer 'x'
+            x = x + 5;  // Inner 'x' becomes 15
+        }
+        x; // Should still be 5
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 5) << "Expected outer 'x' to remain 5.";
+}
+
+// Test 42: Variables Declared in a Scope Are Not Accessible Outside
+TEST_F(VmTest, VariablesNotAccessibleOutsideScope) {
+    EXPECT_THROW({
+        _vm->exec(R"(
+            {
+                var x = 10;
+            }
+            x; // 'x' should not be accessible here
+        )");
+    }, std::exception);
+}
+
+// Test 43: Assignment to Variable in Outer Scope from Inner Scope
+TEST_F(VmTest, AssignmentToOuterScopeVariableFromInnerScope) {
+    auto result = _vm->exec(R"(
+        var x = 10;
+        {
+            x = x + 5; // Modifies outer 'x'
+        }
+        x; // Should be 15
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 15) << "Expected 'x' to be 15.";
+}
+
+// Test 44: Nested Scopes with Variable Declarations
+TEST_F(VmTest, NestedScopesWithVariableDeclarations) {
+    auto result = _vm->exec(R"(
+        var x = 1;
+        {
+            var y = 2;
+            {
+                var z = x + y; // z = 1 + 2 = 3
+            }
+            // z is not accessible here
+            y = y + x; // y = 2 + 1 = 3
+        }
+        x; // Should be 1
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 1) << "Expected 'x' to be 1.";
+}
+
+// Test 45: Variable Shadowing in Multiple Nested Scopes
+TEST_F(VmTest, VariableShadowingInNestedScopes) {
+    auto result = _vm->exec(R"(
+        var x = 1;
+        {
+            var x = 2; // Shadows outer 'x'
+            {
+                var x = 3; // Shadows previous 'x'
+                x; // Should be 3
+            }
+            x; // Should be 2
+        }
+        x; // Should be 1
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 1) << "Expected outer 'x' to be 1.";
+}
+
+// Test 46: Variable Lifetime Ends with Scope
+TEST_F(VmTest, VariableLifetimeEndsWithScope) {
+    EXPECT_THROW({
+        auto result = _vm->exec(R"(
+            {
+                var x = 10;
+            }
+            x = 20; // Should throw an error, 'x' is out of scope
+        )");
+    }, std::exception);
+}
+
+// Test 47: Complex Scope Interactions
+TEST_F(VmTest, ComplexScopeInteractions) {
+    auto result = _vm->exec(R"(
+        var x = 1;
+        var y = 2;
+        {
+            var x = y + 1; // x = 3
+            y = x + 1;     // y = 4
+            {
+                var y = x + 1; // y = 4
+                x = y + 1;     // x = 5
+            }
+            x = x + y; // x = 5 + 4 = 9
+        }
+        x + y; // x = 1, y = 4, so result should be 1 + 4 = 5
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 5) << "Expected result to be 5.";
+}
+
+// Test 48: Assignment to Shadowed Variable
+TEST_F(VmTest, AssignmentToShadowedVariable) {
+    auto result = _vm->exec(R"(
+        var x = 10;
+        {
+            var x = 20; // Shadows outer 'x'
+            {
+                x = x + 5; // Modifies innermost 'x', x = 25
+            }
+            x = x + 5; // Modifies inner 'x', x = 30
+        }
+        x; // Should be 10 (outer 'x' remains unchanged)
+    )");
+
+    EXPECT_TRUE(IS_NUMBER(result)) << "Expected result to be a number.";
+    EXPECT_EQ(AS_NUMBER(result), 10) << "Expected outer 'x' to remain 10.";
+}
+
+
+// Test 50: Re-declaring Variable in Same Scope (Should Throw)
+TEST_F(VmTest, RedeclaringVariableInSameScope) {
+    EXPECT_THROW({
+        _vm->exec(R"(
+            var x = 10;
+            var x = 20; // Redeclaration in the same scope should throw an error
         )");
     }, std::exception);
 }

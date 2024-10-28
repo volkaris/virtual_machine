@@ -23,7 +23,7 @@ public :
         co = AS_CODE(ALLOC_CODE("main"));
 
         //todo do i actually need it?
-        locals.clear();
+        /*locals.clear();*/
         localCount = 0;
 
 
@@ -49,7 +49,14 @@ public :
             }
 
             case ExpType::SYMBOL: {
-                if (exp.string == "true" or exp.string == "false") {
+
+                if (exp.string == "true" || exp.string == "false") {
+                    emit(OP_CONST);
+                    emit(booleanConstIdx(exp.string == "true"));
+                    break;
+                }
+
+                /*if (exp.string == "true" or exp.string == "false") {
                     emit(OP_CONST);
                     emit(booleanConstIdx(exp.string == "true") ? true : false);
                     break;
@@ -67,16 +74,36 @@ public :
                         // Global variable
                         emit(OP_GET_GLOBAL);
                         emit(global->getGlobalIndex(exp.string));
+                    } else {
+                        throw std::runtime_error("Undefined variable: " + exp.string);
                     }
-                    else {
+                }*/
+
+                int slot = -1;
+
+                // Look through scopes from innermost to outermost
+                for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
+                    auto &scope = *scopeIt;
+                    if (scope.find(exp.string) != scope.end()) {
+                        slot = scope[exp.string];
+                        emit(OP_GET_LOCAL);
+                        emit(slot);
+                        break;
+                    }
+                }
+
+                if (slot == -1) {
+                    // Check global variables
+                    if (global->exists(exp.string)) {
+                        emit(OP_GET_GLOBAL);
+                        emit(global->getGlobalIndex(exp.string));
+                    } else {
                         throw std::runtime_error("Undefined variable: " + exp.string);
                     }
                 }
+
                 break;
             }
-            /*throw std::runtime_error("unknown symbol");*/
-            //мб уберём throw
-
 
             case ExpType::BINARY_EXP: {
                 generate(*exp.left);
@@ -150,11 +177,13 @@ public :
             case ExpType::VAR_DECLARATION: {
                 generate(*exp.varValue);
 
-                if (locals.find(exp.varName) != locals.end()) {
+                auto &currentScope = scopeStack.back();
+
+                if (currentScope.find(exp.varName) != currentScope.end()) {
                     throw std::runtime_error("Variable " + exp.varName + " already exists.");
                 }
 
-                locals[exp.varName] = localCount;
+                currentScope[exp.varName] = localCount;
 
                 co->localNames[localCount] = exp.varName; // Store the variable name
 
@@ -162,18 +191,21 @@ public :
 
 
                 emit(OP_SET_LOCAL);
-                emit(locals[exp.varName]);
+                emit(currentScope[exp.varName]);
                 break;
             }
 
             case ExpType::BLOCK: {
+                scopeStack.emplace_back();
+
                 for (const auto &stmt: exp.statements) {
                     generate(*stmt);
                 }
+                scopeStack.pop_back();
                 break;
             }
             case ExpType::ASSIGNMENT: {
-                // Evaluate the new value
+                /*// Evaluate the new value
                 generate(*exp.varValue);
 
                 // Check if the variable exists
@@ -187,10 +219,35 @@ public :
                     emit(global->getGlobalIndex(exp.varName));
                 } else {
                     throw std::runtime_error("Undefined variable: " + exp.varName);
+                }*/
+
+                generate(*exp.varValue);
+
+                int slot = -1;
+
+                // Look through scopes from innermost to outermost
+                for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
+                    auto &scope = *scopeIt;
+                    if (scope.find(exp.varName) != scope.end()) {
+                        slot = scope[exp.varName];
+                        emit(OP_SET_LOCAL);
+                        emit(slot);
+                        break;
+                    }
                 }
+
+                if (slot == -1) {
+                    // Check global variables
+                    if (global->exists(exp.varName)) {
+                        emit(OP_SET_GLOBAL);
+                        emit(global->getGlobalIndex(exp.varName));
+                    } else {
+                        throw std::runtime_error("Undefined variable: " + exp.varName);
+                    }
+                }
+
                 break;
             }
-
 
 
             /*default: throw std::runtime_error("Unknown expression type.");*/
@@ -208,8 +265,8 @@ private:
     // compiling code object
     CodeObject *co;
 
-
-    std::unordered_map<std::string, int> locals;
+    std::vector<std::unordered_map<std::string, int> > scopeStack;
+    /*std::unordered_map<std::string, int> locals;*/
     int localCount = 0;
 
     size_t getOffset() { return co->code.size(); }

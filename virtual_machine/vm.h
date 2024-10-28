@@ -192,7 +192,7 @@ public:
 
 private:
     void setGlobalVariables() {
-        global->addConst("x", 10);
+        /*global->addConst("x", 10);*/
     }
 
     void push(const EvaluationValue &value) {

@@ -437,3 +437,4 @@ FodyWeavers.xsd
 *.ninja
 /cmake-build-debug
 /out
+/.idea

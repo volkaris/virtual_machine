@@ -28,6 +28,10 @@
 "="                ASSIGN
 ";"                SEMICOLON
 
+"{"                 L_BRACE
+"}"                 R_BRACE
+
+
 \"[^\"]*\"         STRING
 
 \d+                NUMBER
@@ -52,7 +56,7 @@ enum class ExpType {
   IF_EXP,
   VAR_DECLARATION,
   BLOCK, // For statement lists or programs
-   ASSIGNMENT
+  ASSIGNMENT
 };
 
 /**
@@ -128,6 +132,10 @@ using Value = std::shared_ptr<Exp>;
 %token SEMICOLON
 %token IF
 
+%token L_BRACE
+%token R_BRACE
+
+
 %%
 
 Program
@@ -148,6 +156,13 @@ Statement
       { $$ = $1; }
   | Expression SEMICOLON
       { $$ = $1; }
+  | Block
+        { $$ = $1; }
+  ;
+
+Block
+  : L_BRACE StatementList R_BRACE
+      { $$ = std::make_shared<Exp>($2->statements); }
   ;
 
 Assignment
