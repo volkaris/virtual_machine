@@ -858,11 +858,6 @@ TEST_F(VmTest, LogicalNotWithNonBooleanValue) {
 }
 
 
-
-
-
-
-
 TEST_F(VmTest, SimpleWhileLoopSum) {
     auto result = _vm->exec(R"(
         var i = 0;
@@ -934,7 +929,7 @@ TEST_F(VmTest, WhileLoopNoExecution) {
 
 // Test while loop with complex condition
 TEST_F(VmTest, WhileLoopComplexCondition) {
-    auto result =_vm-> exec(R"(
+    auto result = _vm->exec(R"(
         var i = 0;
         var sum = 0;
         while ((i < 5) && (sum < 10)) {
@@ -1007,5 +1002,117 @@ TEST_F(VmTest, WhileLoopInnerVariable) {
     )");
 
     ASSERT_TRUE(IS_NUMBER(result));
-    EXPECT_EQ(AS_NUMBER(result), 6); // (0*2) + (1*2) + (2*2)
+    EXPECT_EQ(AS_NUMBER(result), 6);
+}
+
+TEST_F(VmTest, SimpleForLoopSum) {
+    auto result = _vm->exec(R"(
+        var sum = 0;
+        for (var i = 0; i < 10; i = i + 1) {
+            sum = sum + i;
+        }
+        sum;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 45); // 0 + 1 + 2 + ... + 9 = 45
+}
+
+TEST_F(VmTest, ForLoopWithExistingVariable) {
+    auto result = _vm->exec(R"(
+        var i = 0;
+        var sum = 0;
+        for (; i < 5; i = i + 1) {
+            sum = sum + i;
+        }
+        sum;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 10); // 0 + 1 + 2 + 3 + 4 = 10
+}
+
+TEST_F(VmTest, ForLoopNoInitialization) {
+    auto result = _vm->exec(R"(
+        var i = 0;
+        var sum = 0;
+        for (; i < 3; i = i + 1) {
+            sum = sum + i;
+        }
+        sum;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 3); // 0 + 1 + 2 = 3
+}
+
+TEST_F(VmTest, ForLoopNoUpdate) {
+    auto result = _vm->exec(R"(
+        var sum = 0;
+        for (var i = 0; i < 5;) {
+            sum = sum + i;
+            i = i + 1;
+        }
+        sum;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 10); // 0 + 1 + 2 + 3 + 4 = 10
+}
+
+
+TEST_F(VmTest, NestedForLoops) {
+    auto result = _vm->exec(R"(
+        var total = 0;
+        for (var i = 0; i < 3; i = i + 1) {
+            for (var j = 0; j < 3; j = j + 1) {
+                total = total + (i * 3 + j);
+            }
+        }
+        total;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 36);
+}
+
+TEST_F(VmTest, ForLoopComplexCondition) {
+    auto result = _vm->exec(R"(
+        var sum = 0;
+        for (var i = 0; (i < 5) && (sum < 10); i = i + 1) {
+            sum = sum + i;
+        }
+        sum;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 10);
+}
+
+//todo implement support for empty body
+/*TEST_F(VmTest, ForLoopWithLogicalNotCondition) {
+    auto result = _vm->exec(R"(
+        var i = 0;
+        for (; !(i >= 5); i = i + 1) {
+            // No operation inside the loop
+        }
+        i;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 5);
+}*/
+
+
+TEST_F(VmTest, ForLoopFactorial) {
+    auto result = _vm->exec(R"(
+        var factorial = 1;
+        for (var i = 1; i <= 5; i = i + 1) {
+            factorial = factorial * i;
+        }
+        factorial;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 120); // 1 * 2 * 3 * 4 * 5 = 120
 }

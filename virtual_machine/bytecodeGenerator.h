@@ -277,6 +277,54 @@ public :
 
                 break;
             }
+            case  ExpType::FOR_EXP : {
+                // Generate initialization (if any)
+                if (exp.forInit != nullptr) {
+                    generate(*exp.forInit);
+                }
+
+                size_t loopStart = co->code.size();
+
+                // Generate condition (if any)
+                if (exp.forCondition != nullptr) {
+                    generate(*exp.forCondition);
+
+                    // Emit OP_JUMP_IF_FALSE with placeholder address
+                    emit(OP_JUMP_IF_FALSE);
+                    size_t exitJumpAddr = co->code.size();
+                    emit16(0); // Placeholder for exit jump
+
+                    // Generate loop body
+                    generate(*exp.forBody);
+
+                    // Generate update expression (if any)
+                    if (exp.forUpdate != nullptr) {
+                        generate(*exp.forUpdate);
+                    }
+
+                    // Emit OP_JUMP to loop start
+                    emit(OP_JUMP);
+                    emit16(loopStart);
+
+                    // Backpatch the exit jump address to point to the code after the loop
+                    size_t loopEnd = co->code.size();
+                    patchAddress(exitJumpAddr, loopEnd);
+                } else {
+                    // Infinite loop (condition is empty)
+                    // Emit loop body
+                    generate(*exp.forBody);
+
+                    // Generate update expression (if any)
+                    if (exp.forUpdate != nullptr) {
+                        generate(*exp.forUpdate);
+                    }
+
+                    // Emit OP_JUMP to loop start
+                    emit(OP_JUMP);
+                    emit16(loopStart);
+                }
+                break;
+            }
         }
     }
 
