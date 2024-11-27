@@ -251,6 +251,32 @@ public :
 
                 break;
             }
+
+            case ExpType::WHILE_EXP : {
+
+                size_t loopStart = co->code.size();
+
+                // Generate code for condition
+                generate(*exp.condition);
+
+                // Emit OP_JUMP_IF_FALSE with placeholder address
+                emit(OP_JUMP_IF_FALSE);
+                size_t exitJumpAddr = co->code.size();
+                emit16(0); // Placeholder for exit jump
+
+                // Generate code for loop body
+                generate(*exp.whileBody);
+
+                // Emit OP_JUMP to loop start
+                emit(OP_JUMP);
+                emit16(loopStart);
+
+                // Backpatch the exit jump address to point to the code after the loop
+                size_t loopEnd = co->code.size();
+                patchAddress(exitJumpAddr, loopEnd);
+
+                break;
+            }
         }
     }
 

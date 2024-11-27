@@ -22,6 +22,7 @@
 ">"                GREATER
 
 "if"               IF
+"while"            WHILE
 "var"              VAR
 
 "="                ASSIGN
@@ -58,15 +59,16 @@
  * Expression type.
  */
 enum class ExpType {
-  NUMBER,
-  STRING,
-  SYMBOL,
-  BINARY_EXP,
-  UNARY_EXP,       // for unary operators like '!'
-  IF_EXP,
-  VAR_DECLARATION,
-  BLOCK, // For statement lists or programs
-  ASSIGNMENT
+   NUMBER,
+    STRING,
+    SYMBOL,
+    BINARY_EXP,
+    UNARY_EXP,
+    IF_EXP,
+    WHILE_EXP,    // Added this line
+    VAR_DECLARATION,
+    BLOCK,
+    ASSIGNMENT
 };
 
 /**
@@ -103,6 +105,8 @@ struct Exp {
   std::string unaryOp;
   std::shared_ptr<Exp> operand;
 
+ // For WHILE_EXP
+  std::shared_ptr<Exp> whileBody;
 
   // Constructors:
   // For NUMBER
@@ -140,6 +144,9 @@ struct Exp {
   Exp(const std::vector<std::shared_ptr<Exp>>& statements)
       : type(ExpType::BLOCK), statements(statements) {}
 
+  // For WHILE_EXP
+  Exp(ExpType expType, std::shared_ptr<Exp> condition, std::shared_ptr<Exp> whileBody)
+      : type(expType), condition(condition), whileBody(whileBody) {}
 
 };
 
@@ -147,11 +154,12 @@ using Value = std::shared_ptr<Exp>;
 
 %}
 
+%token IF
+%token ELSE
+%token WHILE
 %token VAR
 %token ASSIGN
 %token SEMICOLON
-%token IF
-%token ELSE
 
 
 %token L_BRACE
@@ -200,6 +208,7 @@ Statement
 
 MatchedStatement
   : IfStatement
+  | WhileStatement
   | OtherStatement
   ;
 
@@ -217,6 +226,12 @@ IfWithoutElse
   : IF L_PAREN Expression R_PAREN Statement
       { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $5, nullptr); }
   ;
+
+WhileStatement
+  : WHILE L_PAREN Expression R_PAREN MatchedStatement
+      { $$ = std::make_shared<Exp>(ExpType::WHILE_EXP, $3, $5); }
+  ;
+
 
 OtherStatement
   : VarDeclaration SEMICOLON

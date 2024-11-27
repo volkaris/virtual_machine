@@ -232,6 +232,10 @@ public:
                 default: {
                     throw std::runtime_error("Unknown opcode: " + std::to_string(op_code));
                 }
+
+
+
+
             }
         }
     }

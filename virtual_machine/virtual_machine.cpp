@@ -6,26 +6,27 @@ using namespace std;
 
 int main() {
     vm vm;
-    /*EvaluationValue result = vm.exec("var x = 10; x = x + 5;  x ");*/
 
-    /*auto result = vm.exec(R"(
-           var x=10;
-           if (x!=10) {
-            var y=100;
-            var z=200;
-            var yz=y+z;
-            yz;
-  }
-            else {
-                y;
-}
-        )");*/
 
-    auto result2 = vm.exec(R"(
-        var a = true;
-        var b = (a || (1 / 0 > 0)); // Should not evaluate (1 / 0 > 0)
-        b;
-    )");
+    auto result = vm.exec(R"(
+    var x = 0;
+    while (x < 5) {
+        x = x + 1;
+    }
+    x;
+)");
 
-    return 0;
+    int i = 0;
+    int total = 0;
+    while (i < 3) {
+        int j = 0;
+        while (j < 3) {
+            total = total + (i * 3 + j);
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    std::cout << total;
+int     x=10;
+
 }

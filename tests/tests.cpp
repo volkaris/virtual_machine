@@ -856,3 +856,156 @@ TEST_F(VmTest, LogicalNotWithNonBooleanValue) {
     EXPECT_TRUE(IS_BOOL(result)) << "Expected result to be a boolean.";
     EXPECT_EQ(AS_BOOL(result), true) << "Expected b to be true.";
 }
+
+
+
+
+
+
+
+TEST_F(VmTest, SimpleWhileLoopSum) {
+    auto result = _vm->exec(R"(
+        var i = 0;
+        var sum = 0;
+        while (i < 10) {
+            sum = sum + i;
+            i = i + 1;
+        }
+        sum;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 45);
+}
+
+/*// Test while loop with a break condition (since 'break' is not implemented, this will test proper loop exit)
+TEST_F(VmTest, WhileLoopWithCondition) {
+    auto result = _vm->exec(R"(
+        var i = 0;
+        while (true) {
+            if (i == 5) {
+                i = 10; // Simulate break by setting i to exit condition
+            }
+            i = i + 1;
+            if (i >= 10) {
+                break; // Since 'break' is not implemented, this will cause an error
+            }
+        }
+        i;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 10);
+}*/
+
+// Test nested while loops
+TEST_F(VmTest, NestedWhileLoops) {
+    auto result = _vm->exec(R"(
+        var i = 0;
+        var total = 0;
+        while (i < 3) {
+            var j = 0;
+            while (j < 3) {
+                total = total + (i * 3 + j);
+                j = j + 1;
+            }
+            i = i + 1;
+        }
+        total;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 36);
+}
+
+// Test while loop that should not execute (condition false at start)
+TEST_F(VmTest, WhileLoopNoExecution) {
+    auto result = _vm->exec(R"(
+        var i = 0;
+        while (i < 0) {
+            i = i + 1;
+        }
+        i;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 0);
+}
+
+// Test while loop with complex condition
+TEST_F(VmTest, WhileLoopComplexCondition) {
+    auto result =_vm-> exec(R"(
+        var i = 0;
+        var sum = 0;
+        while ((i < 5) && (sum < 10)) {
+            sum = sum + i;
+            i = i + 1;
+        }
+        sum;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 10);
+}
+
+// Test while loop with logical not
+TEST_F(VmTest, WhileLoopWithLogicalNot) {
+    auto result = _vm->exec(R"(
+        var i = 0;
+        while (!(i >= 5)) {
+            i = i + 1;
+        }
+        i;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 5);
+}
+
+
+// Test while loop modifying a global variable
+TEST_F(VmTest, WhileLoopGlobalVariable) {
+    auto result = _vm->exec(R"(
+        var count = 0;
+        while (count < 3) {
+            count = count + 1;
+        }
+        count;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 3);
+}
+
+// Test while loop with a decrementing counter
+TEST_F(VmTest, WhileLoopDecrementCounter) {
+    auto result = _vm->exec(R"(
+        var i = 5;
+        var product = 1;
+        while (i > 0) {
+            product = product * i;
+            i = i - 1;
+        }
+        product;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 120); // 5!
+}
+
+// Test while loop using variables declared inside the loop
+TEST_F(VmTest, WhileLoopInnerVariable) {
+    auto result = _vm->exec(R"(
+        var total = 0;
+        var i = 0;
+        while (i < 3) {
+            var j = i * 2;
+            total = total + j;
+            i = i + 1;
+        }
+        total;
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 6); // (0*2) + (1*2) + (2*2)
+}
