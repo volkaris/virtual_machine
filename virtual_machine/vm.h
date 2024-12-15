@@ -23,7 +23,6 @@ public:
     }
 
     EvaluationValue exec(const std::string &program) {
-
         std::shared_ptr<Exp> ast = _parser->parse(program);
 
         co = _bytecodeGenerator->compile(*ast);
@@ -75,7 +74,7 @@ public:
 
                 case OP_CONST:
                     push(GET_CONST());
-                    break;
+                break;
 
                 case OP_ADD: {
                     auto right = pop();
@@ -141,7 +140,7 @@ public:
                 case OP_JUMP_IF_FALSE: {
                     uint16_t addr = READ_SHORT();
                     EvaluationValue condition = pop();
-                    if (IS_BOOLEAN(condition) && !AS_BOOLEAN(condition)) {
+                    if (IS_BOOL(condition) && !AS_BOOL(condition)) {
                         ip = &co->code[addr];
                     } /*else {
                         // Skip the jump address
@@ -157,11 +156,10 @@ public:
                 }
 
 
-                case OP_NIL:
+                case OP_NIL: {
                     push(NIL());
                     break;
-                default:
-                    throw std::runtime_error("Unknown opcode: " + std::to_string(op_code));
+                }
 
                 case OP_GET_GLOBAL: {
                     auto globalIndex = READ_BYTE();
@@ -186,6 +184,58 @@ public:
                     push(locals[slot]);
                     break;
                 }
+
+                case OP_LOGICAL_NOT: {
+                    auto operand = pop();
+                    bool result = !isTruth(operand);
+                    push(BOOLEAN(result));
+                    break;
+                }
+
+                case OP_JUMP_IF_FALSE_OR_POP: {
+                    uint16_t address = READ_SHORT();
+
+                    auto value = peek();
+
+                    if (!isTruth(value)) {
+                        pop(); // Remove the value
+                        ip = &co->code[address];
+                    } else {
+                        pop(); // Remove the value
+                    }
+                    break;
+                }
+
+                case OP_JUMP_IF_TRUE_OR_POP: {
+                    uint16_t address = READ_SHORT();
+                    auto value = peek();
+
+                    if (isTruth(value)) {
+                        pop(); // Remove the value
+                        ip = &co->code[address];
+                    } else {
+                        pop(); // Remove the value
+                    }
+                    break;
+                }
+
+                case OP_DUP: {
+                    // Ensure there is at least one value on the stack to duplicate
+                    if (sp == stack.begin()) {
+                        throw std::runtime_error("Stack underflow: Cannot duplicate from an empty stack.");
+                    }
+
+                    EvaluationValue value = peek(); // Get the top value without removing it
+                    push(value); // Push a copy onto the stack
+                    break;
+                }
+                default: {
+                    throw std::runtime_error("Unknown opcode: " + std::to_string(op_code));
+                }
+
+
+
+
             }
         }
     }
@@ -194,6 +244,27 @@ private:
     void setGlobalVariables() {
         /*global->addConst("x", 10);*/
     }
+
+    bool isTruth(const EvaluationValue &value) {
+        if (IS_BOOL(value)) {
+            return AS_BOOL(value);
+        }
+
+        if (IS_NIL(value)) {
+            return false;
+        }
+
+        if (IS_NUMBER(value)) {
+            return AS_NUMBER(value) != 0;
+        }
+
+        if (IS_STRING(value)) {
+            return !AS_CPP_STRING(value).empty();
+        }
+
+        return false;
+    }
+
 
     void push(const EvaluationValue &value) {
         if (static_cast<size_t>(sp - stack.begin()) == STACK_LIMIT) {
@@ -215,6 +286,13 @@ private:
         }
         --sp;
         return *sp;
+    }
+
+    EvaluationValue peek() {
+        if (sp == stack.begin()) {
+            throw std::runtime_error("Stack empty.");
+        }
+        return *(sp - 1);
     }
 
     uint8_t READ_BYTE() {

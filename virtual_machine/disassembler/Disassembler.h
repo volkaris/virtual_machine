@@ -54,6 +54,22 @@ private:
                 return byteInstruction("OP_SET_LOCAL", co, offset);
             case OP_NIL:
                 return simpleInstruction("OP_NIL", offset);
+            case OP_LOGICAL_NOT:
+                return simpleInstruction("OP_LOGICAL_NOT", offset);
+            case OP_LOGICAL_AND:
+                return simpleInstruction("OP_LOGICAL_AND", offset);
+            case OP_LOGICAL_OR:
+                return simpleInstruction("OP_LOGICAL_OR", offset);
+
+            case OP_JUMP_IF_FALSE_OR_POP:
+                return jumpInstruction("OP_JUMP_IF_FALSE_OR_POP", 1, co, offset);
+
+            case OP_JUMP_IF_TRUE_OR_POP:
+                return jumpInstruction("OP_JUMP_IF_TRUE_OR_POP", 1, co, offset);
+
+            case OP_DUP:
+                return simpleInstruction("OP_DUP", offset);
+
             default:
                 throw std::runtime_error("Unknown opcode: " + std::to_string(opcode));
                 return offset + 1;
