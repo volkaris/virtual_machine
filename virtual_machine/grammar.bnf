@@ -7,10 +7,12 @@
 
 \s+                %empty
 
-"+"                PLUS
-"-"                MINUS
-"*"                MULTIPLY
-"/"                DIVIDE
+"return"           RETURN
+"func"             FUNC
+"if"               IF
+"while"            WHILE
+"for"              FOR
+"var"              VAR
 
 "=="               EQUALS
 "!="               NOT_EQUALS
@@ -18,11 +20,6 @@
 ">="               GREATER_EQUAL
 "<"                LESS
 ">"                GREATER
-
-"if"               IF
-"while"            WHILE
-"for"              FOR
-"var"              VAR
 
 "="                ASSIGN
 ";"                SEMICOLON
@@ -39,6 +36,11 @@
 "||"               LOGICAL_OR
 "!"                LOGICAL_NOT
 
+"+"                PLUS
+"-"                MINUS
+"*"                MULTIPLY
+"/"                DIVIDE
+
 \"[^\"]*\"         STRING
 
 \d+                NUMBER
@@ -47,18 +49,14 @@
 
 /lex
 
-
 %{
 
 #include <string>
 #include <vector>
 #include <memory>
 
-/**
- * Expression type.
- */
 enum class ExpType {
-   NUMBER,
+    NUMBER,
     STRING,
     SYMBOL,
     BINARY_EXP,
@@ -68,103 +66,100 @@ enum class ExpType {
     FOR_EXP,
     VAR_DECLARATION,
     BLOCK,
-    ASSIGNMENT
+    ASSIGNMENT,
+    FUNCTION_DECLARATION,
+    FUNCTION_CALL,
+    PARAM_LIST,
+    ARG_LIST,
+    RETURN_STATEMENT
 };
 
-/**
- * Expression.
- */
 struct Exp {
-  ExpType type;
+    ExpType type;
 
-  // For NUMBER
-  int number;
+    int number;
+    std::string string;
 
-  // For STRING and SYMBOL
-  std::string string;
+    std::string op;
+    std::shared_ptr<Exp> left;
+    std::shared_ptr<Exp> right;
 
-  // For BINARY_EXP
-  std::string op;
-  std::shared_ptr<Exp> left;
-  std::shared_ptr<Exp> right;
+    std::shared_ptr<Exp> condition;
+    std::shared_ptr<Exp> thenBranch;
+    std::shared_ptr<Exp> elseBranch;
 
-  // For IF_EXP
-  std::shared_ptr<Exp> condition;
-  std::shared_ptr<Exp> thenBranch;
-  std::shared_ptr<Exp> elseBranch;
+    std::string varName;
+    std::shared_ptr<Exp> varValue;
 
+    std::vector<std::shared_ptr<Exp>> statements;
 
-  // For VAR_DECLARATION
-  std::string varName;
-  std::shared_ptr<Exp> varValue;
+    std::string unaryOp;
+    std::shared_ptr<Exp> operand;
 
-  // For BLOCK
-  std::vector<std::shared_ptr<Exp>> statements;
+    std::shared_ptr<Exp> whileBody;
 
- // For UNARY_EXP
-  std::string unaryOp;
-  std::shared_ptr<Exp> operand;
-
- // For WHILE_EXP
-  std::shared_ptr<Exp> whileBody;
-
-    // For FOR_EXP
     std::shared_ptr<Exp> forInit;
     std::shared_ptr<Exp> forCondition;
     std::shared_ptr<Exp> forUpdate;
     std::shared_ptr<Exp> forBody;
 
+    std::string funcName;
+    std::vector<std::string> funcParams;
+    std::shared_ptr<Exp> funcBody;
 
-  // Constructors:
-  // For NUMBER
-  Exp(int number) : type(ExpType::NUMBER), number(number) {}
+    std::vector<std::shared_ptr<Exp>> callArguments;
 
-  // For STRING and SYMBOL
-  Exp(const std::string& strVal) {
-    if (strVal[0] == '"') {
-      type = ExpType::STRING;
-      string = strVal.substr(1, strVal.size() - 2);
-    } else {
-      type = ExpType::SYMBOL;
-      string = strVal;
+    std::shared_ptr<Exp> returnValue;
+
+    // Constructors
+
+    Exp(ExpType type, const std::vector<std::string> &params)
+        : type(type), funcParams(params) {}
+
+    Exp(ExpType type, const std::vector<std::shared_ptr<Exp>> &args)
+        : type(type), callArguments(args) {}
+
+    Exp(ExpType type, const std::string &name, const std::vector<std::string> &params, std::shared_ptr<Exp> body)
+        : type(type), funcName(name), funcParams(params), funcBody(body) {}
+
+    Exp(ExpType type, const std::string &name, const std::vector<std::shared_ptr<Exp>> &args)
+        : type(type), funcName(name), callArguments(args) {}
+
+    Exp(int number) : type(ExpType::NUMBER), number(number) {}
+
+    Exp(const std::string& strVal) {
+        if (strVal[0] == '"') {
+            type = ExpType::STRING;
+            string = strVal.substr(1, strVal.size() - 2);
+        } else {
+            type = ExpType::SYMBOL;
+            string = strVal;
+        }
     }
-  }
 
+    Exp(const std::string& unaryOp, std::shared_ptr<Exp> operand)
+        : type(ExpType::UNARY_EXP), unaryOp(unaryOp), operand(operand) {}
 
- Exp(const std::string& unaryOp, std::shared_ptr<Exp> operand)
-      : type(ExpType::UNARY_EXP), unaryOp(unaryOp), operand(operand) {}
+    Exp(ExpType expType, const std::string& varName, std::shared_ptr<Exp> varValue)
+        : type(expType), varName(varName), varValue(varValue) {}
 
+    Exp(const std::string& op, std::shared_ptr<Exp> left, std::shared_ptr<Exp> right)
+        : type(ExpType::BINARY_EXP), op(op), left(left), right(right) {}
 
-  // For VAR_DECLARATION
-  Exp(ExpType expType, const std::string& varName, std::shared_ptr<Exp> varValue)
-      : type(expType), varName(varName), varValue(varValue) {}
+    Exp(ExpType expType, std::shared_ptr<Exp> condition, std::shared_ptr<Exp> thenBranch, std::shared_ptr<Exp> elseBranch)
+        : type(expType), condition(condition), thenBranch(thenBranch), elseBranch(elseBranch) {}
 
-  // For BINARY_EXP
-  Exp(const std::string& op, std::shared_ptr<Exp> left, std::shared_ptr<Exp> right)
-      : type(ExpType::BINARY_EXP), op(op), left(left), right(right) {}
+    Exp(const std::vector<std::shared_ptr<Exp>>& statements)
+        : type(ExpType::BLOCK), statements(statements) {}
 
-  // For IF_EXP
-  Exp(ExpType expType, std::shared_ptr<Exp> condition, std::shared_ptr<Exp> thenBranch, std::shared_ptr<Exp> elseBranch)
-      : type(expType), condition(condition), thenBranch(thenBranch), elseBranch(elseBranch) {}
+    Exp(ExpType expType, std::shared_ptr<Exp> condition, std::shared_ptr<Exp> whileBody)
+        : type(expType), condition(condition), whileBody(whileBody) {}
 
-  // For BLOCK
-  Exp(const std::vector<std::shared_ptr<Exp>>& statements)
-      : type(ExpType::BLOCK), statements(statements) {}
+    Exp(ExpType expType, std::shared_ptr<Exp> forInit, std::shared_ptr<Exp> forCondition, std::shared_ptr<Exp> forUpdate, std::shared_ptr<Exp> forBody)
+        : type(expType), forInit(forInit), forCondition(forCondition), forUpdate(forUpdate), forBody(forBody) {}
 
-  // For WHILE_EXP
-  Exp(ExpType expType, std::shared_ptr<Exp> condition, std::shared_ptr<Exp> whileBody)
-      : type(expType), condition(condition), whileBody(whileBody) {}
-
-   Exp(ExpType expType,
-        std::shared_ptr<Exp> forInit,
-        std::shared_ptr<Exp> forCondition,
-        std::shared_ptr<Exp> forUpdate,
-        std::shared_ptr<Exp> forBody)
-        : type(expType),
-          forInit(forInit),
-          forCondition(forCondition),
-          forUpdate(forUpdate),
-          forBody(forBody) {}
+    Exp(ExpType type, std::shared_ptr<Exp> returnValue)
+        : type(type), returnValue(returnValue) {}
 };
 
 using Value = std::shared_ptr<Exp>;
@@ -176,6 +171,9 @@ using Value = std::shared_ptr<Exp>;
 %token WHILE
 %token FOR
 %token VAR
+%token FUNC
+%token RETURN
+
 %token ASSIGN
 %token SEMICOLON
 
@@ -220,12 +218,14 @@ StatementList
 Statement
     : MatchedStatement
     | UnmatchedStatement
+    | ReturnStatement
     ;
 
 MatchedStatement
     : IfStatement
     | WhileStatement
     | ForStatement
+    | FunctionDeclaration
     | OtherStatement
     ;
 
@@ -285,6 +285,18 @@ OtherStatement
         { $$ = $1; }
     ;
 
+FunctionDeclaration
+    : FUNC SYMBOL L_PAREN ParameterList R_PAREN Block
+        {
+          $$ = std::make_shared<Exp>(
+             ExpType::FUNCTION_DECLARATION,
+             $2,
+             $4->funcParams,
+             $6
+          );
+        }
+    ;
+
 Block
     : L_BRACE StatementList R_BRACE
         { $$ = std::make_shared<Exp>($2->statements); }
@@ -293,6 +305,11 @@ Block
 VarDeclaration
     : VAR SYMBOL ASSIGN Expression
         { $$ = std::make_shared<Exp>(ExpType::VAR_DECLARATION, $2, $4); }
+    ;
+
+ReturnStatement
+    : RETURN Expression SEMICOLON
+        { $$ = std::make_shared<Exp>(ExpType::RETURN_STATEMENT, $2); }
     ;
 
 Expression
@@ -373,6 +390,58 @@ PrimaryExpression
         { $$ = std::make_shared<Exp>(std::stoi($1)); }
     | STRING
         { $$ = std::make_shared<Exp>($1); }
+    | SYMBOL L_PAREN ArgumentList R_PAREN
+        {
+           $$ = std::make_shared<Exp>(
+                 ExpType::FUNCTION_CALL,
+                 $1,
+                 $3->callArguments
+               );
+        }
     | SYMBOL
         { $$ = std::make_shared<Exp>($1); }
+    ;
+
+ParameterList
+    : /* empty */
+        {
+          $$ = std::make_shared<Exp>(ExpType::PARAM_LIST, std::vector<std::string>());
+        }
+    | SymbolList
+        { $$ = $1; }
+    ;
+
+SymbolList
+    : SYMBOL
+        {
+          std::vector<std::string> params = {$1};
+          $$ = std::make_shared<Exp>(ExpType::PARAM_LIST, params);
+        }
+    | SymbolList "," SYMBOL
+        {
+          $1->funcParams.push_back($3);
+          $$ = $1;
+        }
+    ;
+
+ArgumentList
+    : /* empty */
+        {
+          $$ = std::make_shared<Exp>(ExpType::ARG_LIST, std::vector<std::shared_ptr<Exp>>());
+        }
+    | ExpressionList
+        { $$ = $1; }
+    ;
+
+ExpressionList
+    : Expression
+        {
+          std::vector<std::shared_ptr<Exp>> args = {$1};
+          $$ = std::make_shared<Exp>(ExpType::ARG_LIST, args);
+        }
+    | ExpressionList "," Expression
+        {
+          $1->callArguments.push_back($3);
+          $$ = $1;
+        }
     ;

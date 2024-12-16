@@ -23,6 +23,14 @@ struct Global{
         globals[index].value = value;
     }
 
+
+ void    addNativeFunction(const std::string& name,std::function<void()> fn,size_t arity) {
+        if (exists(name)) {
+            return;
+        }
+        globals.push_back({name,ALLOC_NATIVE(fn,name,arity)});
+
+    }
     void define(const std::string& name) {
         auto index = getGlobalIndex(name);
 

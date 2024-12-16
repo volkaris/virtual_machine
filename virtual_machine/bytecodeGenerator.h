@@ -95,10 +95,9 @@ public :
 
 
             case ExpType::BINARY_EXP: {
-
                 if (exp.op == "&&") {
                     // Short-circuit evaluation for '&&'        //Short-circuit evaluation is when the second argument is not evaluated if the first argument is false.
-                    generate(*exp.left);                        //for binary && ur wont evaluate the right  if the left is false
+                    generate(*exp.left); //for binary && ur wont evaluate the right  if the left is false
 
                     emit(OP_DUP); // Duplicate the value for checking
                     emit(OP_JUMP_IF_FALSE_OR_POP);
@@ -110,7 +109,8 @@ public :
                     // Backpatch the jump address
                     size_t afterRight = co->code.size();
                     patchAddress(jumpAddr, afterRight);
-                } else if (exp.op == "||") {                //for || ur wont evaluate the right  if the left is true
+                } else if (exp.op == "||") {
+                    //for || ur wont evaluate the right  if the left is true
                     // Short-circuit evaluation for '||'
                     generate(*exp.left);
 
@@ -252,8 +252,7 @@ public :
                 break;
             }
 
-            case ExpType::WHILE_EXP : {
-
+            case ExpType::WHILE_EXP: {
                 size_t loopStart = co->code.size();
 
                 // Generate code for condition
@@ -277,7 +276,7 @@ public :
 
                 break;
             }
-            case  ExpType::FOR_EXP : {
+            case ExpType::FOR_EXP: {
                 // Generate initialization (if any)
                 if (exp.forInit != nullptr) {
                     generate(*exp.forInit);
@@ -323,6 +322,17 @@ public :
                     emit(OP_JUMP);
                     emit16(loopStart);
                 }
+                break;
+            }
+            case ExpType::FUNCTION_CALL: {
+                generate(exp.funcName);
+
+                for (const auto& i: exp.funcParams) {
+                    generate(i);
+                }
+                emit(OP_CALL);
+                emit(exp.funcParams.size()-1);
+
                 break;
             }
         }

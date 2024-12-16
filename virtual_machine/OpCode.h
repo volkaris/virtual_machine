@@ -33,6 +33,8 @@ constexpr auto OP_DUP= 0X18;
 
 constexpr auto OP_NIL = 0x20;
 
+constexpr auto OP_CALL= 0x21;
+
 
 inline std::string opcodeToString(uint8_t opcode) {
     switch (opcode) {
@@ -56,6 +58,7 @@ inline std::string opcodeToString(uint8_t opcode) {
         case OP_JUMP_IF_FALSE_OR_POP: return "JUMP_IF_FALSE_OR_POP";
         case OP_JUMP_IF_TRUE_OR_POP: return "JUMP_IF_TRUE_OR_POP";
         case OP_DUP: return "DUP";
+        case OP_CALL: return "CALL";
 
         default:
             throw std::runtime_error("Unknown opcode: " + std::to_string(opcode));
