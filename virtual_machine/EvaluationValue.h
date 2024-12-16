@@ -69,9 +69,6 @@ struct CodeObject : public Object {
 
     // Mapping from slot indices to variable names
     std::unordered_map<int, std::string> localNames;
-
-    // CHANGED: Add arity (number of parameters)
-    int arity = 0;
 };
 
 
@@ -176,13 +173,6 @@ inline std::string evaValueToConstantString(const EvaluationValue &evaValue)
     {
         ss << '"' << AS_CPP_STRING(evaValue) << '"';
     }
-
-    else if (IS_CODE(evaValue))
-    {
-        auto code = AS_CODE(evaValue);
-        ss << "code: " << code << ": " << code->name << "/" << code->arity;
-    }
-
     /*
     else if (IS_CODE(evaValue))
     {

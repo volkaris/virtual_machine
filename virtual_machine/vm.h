@@ -6,22 +6,12 @@
 #include "parser.h"
 using namespace syntax;
 
-#define STACK_LIMIT 51200
+#define STACK_LIMIT 512
 
 
 #include "EvaluationValue.h"
 #include "bytecodeGenerator.h"
 #include "Global.h"
-
-
-struct CallFrame {
-    CodeObject *co;
-    uint8_t *ip;
-    EvaluationValue *bp; // base pointer for this function's stack frame
-    int arity;
-    std::vector<EvaluationValue> locals; // Per-frame locals
-};
-
 
 class vm {
 public:
@@ -29,8 +19,7 @@ public:
            _parser(std::make_unique<parser>()),
            _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {
         setGlobalVariables();
-        /*locals.resize(1024);*/
-        frameCount = 0;
+        locals.resize(1024);
     }
 
     EvaluationValue exec(const std::string &program) {
@@ -38,18 +27,11 @@ public:
 
         co = _bytecodeGenerator->compile(*ast);
 
+
         ip = &co->code[0];
         sp = stack.begin();
 
-        /*_bytecodeGenerator->disassembleBytecode();*/
-
-        // Initialize the main frame (even if it's empty)
-        frames[frameCount].co = co;
-        frames[frameCount].ip = ip;
-        frames[frameCount].bp = sp;
-        frames[frameCount].arity = 0;
-        frames[frameCount].locals.resize(0);
-        frameCount++;
+        _bytecodeGenerator->disassembleBytecode();
 
         return evalExp();
     }
@@ -92,7 +74,7 @@ public:
 
                 case OP_CONST:
                     push(GET_CONST());
-                    break;
+                break;
 
                 case OP_ADD: {
                     auto right = pop();
@@ -193,19 +175,13 @@ public:
 
                 case OP_SET_LOCAL: {
                     uint8_t slot = READ_BYTE();
-                    if (slot >= frames[frameCount - 1].locals.size()) {
-                        throw std::runtime_error("Invalid local slot.");
-                    }
-                    frames[frameCount - 1].locals[slot] = pop();
+                    locals[slot] = pop();
                     break;
                 }
 
                 case OP_GET_LOCAL: {
                     uint8_t slot = READ_BYTE();
-                    if (slot >= frames[frameCount - 1].locals.size()) {
-                        throw std::runtime_error("Invalid local slot.");
-                    }
-                    push(frames[frameCount - 1].locals[slot]);
+                    push(locals[slot]);
                     break;
                 }
 
@@ -253,97 +229,18 @@ public:
                     push(value); // Push a copy onto the stack
                     break;
                 }
-
-                // CHANGED: Handle calls
-                case OP_CALL: {
-                    uint8_t argCount = READ_BYTE();
-                    // The function is on top of the stack (after pushing args)
-                    EvaluationValue fnVal = pop();
-                    if (!IS_CODE(fnVal)) {
-                        throw std::runtime_error("Attempt to call non-function.");
-                    }
-
-                    CodeObject *fn = AS_CODE(fnVal);
-
-                    // Arguments are currently on stack
-                    pushFrame(fn, argCount);
-                    break;
-                }
-
-                // CHANGED: Handle return
-                case OP_RETURN: {
-                    EvaluationValue returnValue = pop();
-
-                    // Pop current call frame
-                    EvaluationValue *bp = frames[frameCount - 1].bp;
-                    // Remove local frame including arguments and function object itself
-                    sp = bp;
-                    popFrame();
-
-                    // Push return value
-                    push(returnValue);
-
-                    if (frameCount == 0) {
-                        // If we returned from the top-level
-                        return returnValue;
-                    }
-                    break;
-                }
-
-
                 default: {
                     throw std::runtime_error("Unknown opcode: " + std::to_string(op_code));
                 }
+
+
+
+
             }
         }
     }
 
 private:
-    CallFrame frames[64];
-    int frameCount = 0;
-
-    void pushFrame(CodeObject *fn, int argCount) {
-        if (frameCount == 64) {
-            throw std::runtime_error("Call stack overflow.");
-        }
-
-        // Check arity
-        if (argCount != fn->arity) {
-            throw std::runtime_error("Function argument count mismatch.");
-        }
-
-        frames[frameCount].co = fn;
-        frames[frameCount].ip = &fn->code[0];
-        frames[frameCount].bp = &*(sp - argCount); // Correct assignment
-        frames[frameCount].arity = fn->arity;
-        frames[frameCount].locals.resize(fn->arity);
-
-        // Assign arguments to locals
-        for (int i = 0; i < fn->arity; i++) {
-            frames[frameCount].locals[i] = *(frames[frameCount].bp + i);
-        }
-
-        frameCount++;
-        co = fn;
-        ip = frames[frameCount - 1].ip;
-    }
-
-    void popFrame() {
-        frameCount--;
-        if (frameCount < 0) {
-            throw std::runtime_error("Call stack underflow.");
-        }
-
-        if (frameCount == 0) {
-            // Returning from main
-            co = nullptr;
-            ip = nullptr;
-        } else {
-            co = frames[frameCount - 1].co;
-            ip = frames[frameCount - 1].ip;
-        }
-    }
-
     void setGlobalVariables() {
         /*global->addConst("x", 10);*/
     }
@@ -407,7 +304,7 @@ private:
     }
 
 
-    /*std::vector<EvaluationValue> locals;*/
+    std::vector<EvaluationValue> locals;
 
     //Global object
     std::shared_ptr<Global> global;

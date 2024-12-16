@@ -32,8 +32,6 @@ constexpr auto OP_DUP= 0X18;
 
 
 constexpr auto OP_NIL = 0x20;
-constexpr auto OP_CALL = 0x60;
-constexpr auto OP_RETURN = 0x61;
 
 
 inline std::string opcodeToString(uint8_t opcode) {

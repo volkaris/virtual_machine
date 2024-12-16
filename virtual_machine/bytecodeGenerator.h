@@ -13,11 +13,10 @@
 #include "disassembler/Disassembler.h"
 
 
-
 class bytecodeGenerator {
 public :
     explicit bytecodeGenerator(const std::shared_ptr<Global> &global)
-        : global(global), disassembler(std::make_unique<Disassembler>(global)), co(nullptr), localCount(0) {
+        : global(global), disassembler(std::make_unique<Disassembler>(global)), co(nullptr) {
     }
 
     CodeObject *compile(const Exp &exp) {
@@ -197,32 +196,21 @@ public :
             case ExpType::VAR_DECLARATION: {
                 generate(*exp.varValue);
 
-                if (co->name == "main") {
-                    // Define the global variable before setting it
-                    global->define(exp.varName);
+                auto &currentScope = scopeStack.back();
 
-                    // Emit OP_SET_GLOBAL for main scope variables
-                    emit(OP_SET_GLOBAL);
-                    int globalIdx = global->getGlobalIndex(exp.varName);
-                    if (globalIdx == -1) {
-                        throw std::runtime_error("Failed to define global variable: " + exp.varName);
-                    }
-                    emit(static_cast<uint8_t>(globalIdx));
-                } else {
-                    auto &currentScope = scopeStack.back();
-
-                    if (currentScope.find(exp.varName) != currentScope.end()) {
-                        throw std::runtime_error("Variable " + exp.varName + " already exists.");
-                    }
-
-                    currentScope[exp.varName] = localCount;
-                    co->localNames[localCount] = exp.varName; // Store the variable name
-                    localCount++;
-
-                    // Emit OP_SET_LOCAL for function scope variables
-                    emit(OP_SET_LOCAL);
-                    emit(currentScope[exp.varName]);
+                if (currentScope.find(exp.varName) != currentScope.end()) {
+                    throw std::runtime_error("Variable " + exp.varName + " already exists.");
                 }
+
+                currentScope[exp.varName] = localCount;
+
+                co->localNames[localCount] = exp.varName; // Store the variable name
+
+                localCount++;
+
+
+                emit(OP_SET_LOCAL);
+                emit(currentScope[exp.varName]);
                 break;
             }
 
@@ -245,6 +233,8 @@ public :
                     auto &scope = *scopeIt;
                     if (scope.find(exp.varName) != scope.end()) {
                         slot = scope[exp.varName];
+                        emit(OP_SET_LOCAL);
+                        emit(slot);
                         break;
                     }
                 }
@@ -253,19 +243,9 @@ public :
                     // Check global variables
                     if (global->exists(exp.varName)) {
                         emit(OP_SET_GLOBAL);
-                        emit((uint8_t)global->getGlobalIndex(exp.varName));
+                        emit(global->getGlobalIndex(exp.varName));
                     } else {
                         throw std::runtime_error("Undefined variable: " + exp.varName);
-                    }
-                } else {
-                    if (co->name == "main") {
-                        // If in main, treat as global
-                        emit(OP_SET_GLOBAL);
-                        emit((uint8_t)global->getGlobalIndex(exp.varName));
-                    } else {
-                        // Else, treat as local
-                        emit(OP_SET_LOCAL);
-                        emit(slot);
                     }
                 }
 
@@ -345,97 +325,6 @@ public :
                 }
                 break;
             }
-            case ExpType::FUNCTION_DECLARATION: { // CHANGED
-                // Define the function globally first, so it can be referenced by name (e.g., recursion)
-                global->define(exp.funcName);
-
-                // Create a new CodeObject for this function
-                EvaluationValue fnVal = ALLOC_CODE(exp.funcName);
-                CodeObject* fnCo = AS_CODE(fnVal);
-                fnCo->arity = (int)exp.funcParams.size();
-
-                // Save current CodeObject and scope state
-                CodeObject* parentCo = co;
-                auto oldScopeStack = scopeStack;
-
-                co = fnCo;
-                scopeStack.clear();
-                scopeStack.emplace_back(); // new scope for function
-
-                // Assign parameters as locals
-                for (int i = 0; i < fnCo->arity; i++) {
-                    scopeStack.back()[exp.funcParams[i]] = i;
-                    co->localNames[i] = exp.funcParams[i];
-                }
-
-                // Generate the function body
-                generate(*exp.funcBody);
-
-                // If no explicit return at the end, return NIL
-                emit(OP_NIL);
-                emit(OP_RETURN);
-
-                // Restore parent code object and scope
-                co = parentCo;
-                scopeStack = oldScopeStack;
-
-                // Add this function code object to parent constants
-                size_t fnIndex = co->constants.size();
-                co->constants.push_back(fnVal);
-
-                // Now assign the compiled function object to the global variable
-                emit(OP_CONST);
-                emit((uint8_t)fnIndex);
-
-                emit(OP_SET_GLOBAL);
-                emit((uint8_t)global->getGlobalIndex(exp.funcName));
-                break;
-            }
-
-            case ExpType::FUNCTION_CALL: { // CHANGED
-                // Generate arguments first
-                for (auto &arg : exp.callArguments) {
-                    generate(*arg);
-                }
-
-                // Now load the function
-                int slot = -1;
-                for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
-                    auto &scope = *scopeIt;
-                    if (scope.find(exp.funcName) != scope.end()) {
-                        slot = scope[exp.funcName];
-                        emit(OP_GET_LOCAL);
-                        emit(slot);
-                        break;
-                    }
-                }
-
-                if (slot == -1) {
-                    // global
-                    if (!global->exists(exp.funcName)) {
-                        throw std::runtime_error("Undefined function: " + exp.funcName);
-                    }
-                    emit(OP_GET_GLOBAL);
-                    emit(global->getGlobalIndex(exp.funcName));
-                }
-
-                // Emit call with number of arguments
-                emit(OP_CALL);
-                emit((uint8_t)exp.callArguments.size());
-                break;
-            }
-
-            case ExpType::RETURN_STATEMENT: { // CHANGED
-                if (exp.returnValue) {
-                    generate(*exp.returnValue);
-                } else {
-                    emit(OP_NIL);
-                }
-                emit(OP_RETURN);
-                break;
-            }
-
-
         }
     }
 
@@ -452,8 +341,7 @@ private:
 
     std::vector<std::unordered_map<std::string, int> > scopeStack;
     /*std::unordered_map<std::string, int> locals;*/
-
-    int localCount; // Tracks the number of local variables
+    int localCount = 0;
 
     size_t getOffset() { return co->code.size(); }
 
