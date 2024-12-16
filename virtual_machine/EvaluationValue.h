@@ -13,11 +13,10 @@ enum class EvaluationValueType {
 enum class ObjectType {
     STRING,
     CODE,
-    NATIVE
 };
 
 struct Object {
-    explicit Object(ObjectType type) {
+    explicit Object (ObjectType type) {
         this->type = type;
     }
 
@@ -32,23 +31,23 @@ struct EvaluationValue {
         double number;
         Object* object;
     };*/
-    std::variant<bool, double, Object *, std::nullptr_t> value;
+    std::variant<bool, double, Object*,std::nullptr_t> value;
 
-    [[nodiscard]] bool boolean() const {
+    [[nodiscard]] bool boolean () const {
         return std::get<bool>(value);
     }
 
-    [[nodiscard]] double number() const {
+    [[nodiscard]] double number () const {
         return std::get<double>(value);
     }
 
-    [[nodiscard]] Object *object() const {
-        return std::get<Object *>(value);
+    [[nodiscard]] Object* object () const {
+        return std::get<Object*>(value);
     }
 };
 
 struct StringObject : Object {
-    explicit StringObject(const std::string &str) : Object(ObjectType::STRING) {
+    explicit StringObject (const std::string& str) : Object(ObjectType::STRING) {
         this->string = str;
     }
 
@@ -56,7 +55,7 @@ struct StringObject : Object {
 };
 
 struct CodeObject : public Object {
-    explicit CodeObject(std::string name) : Object(ObjectType::CODE), name(std::move(name)) {
+    explicit CodeObject (std::string  name) : Object(ObjectType::CODE), name(std::move(name)) {
     }
 
     //name of unit (most of the cases for function name)
@@ -72,28 +71,15 @@ struct CodeObject : public Object {
     std::unordered_map<int, std::string> localNames;
 };
 
-using NativeFn = std::function<void()>;
 
-struct NativeObject : public Object {
-    NativeObject(NativeFn function, const std::string &name, size_t arity) : Object(ObjectType::NATIVE),
-                                                                             function(function), name(name),
-                                                                             arity(arity) {
-    }
-
-    NativeFn function;
-    std::string name;
-    size_t arity;
-};
-
-
-inline EvaluationValue NUMBER(double value) {
+inline EvaluationValue NUMBER (double value) {
     EvaluationValue val;
     val.type = EvaluationValueType::NUMBER;
     val.value = value;
     return val;
 }
 
-inline EvaluationValue BOOLEAN(bool value) {
+inline EvaluationValue BOOLEAN (bool value) {
     EvaluationValue val;
     val.type = EvaluationValueType::BOOLEAN;
     val.value = value;
@@ -103,115 +89,90 @@ inline EvaluationValue BOOLEAN(bool value) {
 inline EvaluationValue NIL() {
     EvaluationValue val;
     val.type = EvaluationValueType::NIL;
-    val.value = nullptr;
+    val.value=nullptr;
     return val;
 }
 
 
-inline EvaluationValue ALLOC_STRING(std::string value) {
+inline EvaluationValue ALLOC_STRING (std::string value) {
     EvaluationValue val;
     val.type = EvaluationValueType::OBJECT;
-    val.value = static_cast<Object *>(new StringObject(value));
+    val.value = static_cast<Object*>(new StringObject(value));
     return val;
 }
 
 
-inline EvaluationValue ALLOC_CODE(std::string value) {
+inline EvaluationValue ALLOC_CODE (std::string value) {
     EvaluationValue val;
     val.type = EvaluationValueType::OBJECT;
-    val.value = static_cast<Object *>(new CodeObject(value));
+    val.value = static_cast<Object*>(new CodeObject(value));
     return val;
 }
 
-inline EvaluationValue ALLOC_NATIVE(NativeFn function,std::string name,size_t arity) {
-    EvaluationValue val;
-    val.type = EvaluationValueType::OBJECT;
-    val.value = static_cast<Object *>(new NativeObject(function,name,arity));
-    return val;
-}
-
-
-inline double AS_NUMBER(const EvaluationValue &value) {
+inline double AS_NUMBER (const EvaluationValue& value) {
     return value.number();
 }
 
-inline StringObject *AS_STRING(const EvaluationValue &value) {
-    return static_cast<StringObject *>(value.object());
+inline StringObject* AS_STRING (const EvaluationValue& value) {
+    return static_cast<StringObject*>(value.object());
 }
 
-inline bool AS_BOOL(const EvaluationValue &value) {
+inline bool AS_BOOL (const EvaluationValue& value) {
     return value.boolean();
 }
 
-inline NativeObject* AS_NATIVE(const EvaluationValue &value) {
-    return static_cast<NativeObject*>(value.object());
-}
 
-
-
-inline std::string AS_CPP_STRING(const EvaluationValue &evaValue) {
+inline std::string AS_CPP_STRING (const EvaluationValue& evaValue) {
     return AS_STRING(evaValue)->string;
 }
 
-inline CodeObject *AS_CODE(const EvaluationValue &evaValue) {
-    return static_cast<CodeObject *>(evaValue.object());
+inline CodeObject* AS_CODE (const EvaluationValue& evaValue) {
+    return static_cast<CodeObject*>(evaValue.object());
 }
 
-inline bool IS_NIL(const EvaluationValue &value) {
+inline bool IS_NIL(const EvaluationValue& value) {
     return value.type == EvaluationValueType::NIL;
 }
-
-inline bool IS_NUMBER(const EvaluationValue &value) {
+inline bool IS_NUMBER (const EvaluationValue& value) {
     return value.type == EvaluationValueType::NUMBER;
 }
 
-inline bool IS_BOOL(const EvaluationValue &value) {
+inline bool IS_BOOL (const EvaluationValue& value) {
     return value.type == EvaluationValueType::BOOLEAN;
 }
 
-inline bool IS_OBJECT(const EvaluationValue &value) {
+inline bool IS_OBJECT (const EvaluationValue& value) {
     return value.type == EvaluationValueType::OBJECT;
 }
 
-
-
-
-inline bool IS_OBJECT_TYPE(const EvaluationValue &value, const ObjectType &objectType) {
+inline bool IS_OBJECT_TYPE (const EvaluationValue& value, const ObjectType& objectType) {
     return IS_OBJECT(value) and value.object()->type == objectType;
 }
 
-inline bool IS_STRING(const EvaluationValue &value) {
+inline bool IS_STRING (const EvaluationValue& value) {
     return IS_OBJECT_TYPE(value, ObjectType::STRING);
 }
 
-inline bool IS_CODE(const EvaluationValue &value) {
+inline bool IS_CODE (const EvaluationValue& value) {
     return IS_OBJECT_TYPE(value, ObjectType::CODE);
 }
 
-inline bool IS_NATIVE(const EvaluationValue &value) {
-    return IS_OBJECT_TYPE(value, ObjectType::NATIVE);
-}
 
-inline std::string evaValueToConstantString(const EvaluationValue &evaValue) {
+inline std::string evaValueToConstantString(const EvaluationValue &evaValue)
+{
     std::stringstream ss;
-    if (IS_NUMBER(evaValue)) {
+    if (IS_NUMBER(evaValue))
+    {
         ss << evaValue.number();
-    } else if (IS_BOOL(evaValue)) {
+    }
+    else if (IS_BOOL(evaValue))
+    {
         ss << (evaValue.boolean() ? "true" : "false");
-    } else if (IS_STRING(evaValue)) {
+    }
+    else if (IS_STRING(evaValue))
+    {
         ss << '"' << AS_CPP_STRING(evaValue) << '"';
     }
-    else if (IS_CODE(evaValue))
-    {
-        auto code = AS_CODE(evaValue);
-        ss << "code: " << code << ": " << code->name << "/" << code->name;
-    }
-    else if (IS_NATIVE(evaValue))
-    {
-        auto fn = AS_NATIVE(evaValue);
-        ss << fn->name << "/" << fn->arity;
-    }
-
     /*
     else if (IS_CODE(evaValue))
     {
@@ -244,9 +205,10 @@ inline std::string evaValueToConstantString(const EvaluationValue &evaValue) {
         ss << "instance: " << inst->cls->name;
     }
     */
-    else {
-        throw std::runtime_error(
-            "valueToConstantString: unknown type " + std::to_string(static_cast<int>(evaValue.type)));
+    else
+    {
+        throw std::runtime_error("valueToConstantString: unknown type " + std::to_string(static_cast<int>(evaValue.type)));
+
     }
     return ss.str();
 }

@@ -31,7 +31,7 @@ public:
         ip = &co->code[0];
         sp = stack.begin();
 
-        /*_bytecodeGenerator->disassembleBytecode();*/
+        _bytecodeGenerator->disassembleBytecode();
 
         return evalExp();
     }
@@ -229,23 +229,6 @@ public:
                     push(value); // Push a copy onto the stack
                     break;
                 }
-
-
-                case OP_CALL : {
-                    auto argsCount=READ_BYTE();
-                    auto fnValue=peek(argsCount);
-
-                    if (IS_NATIVE(fnValue)) {
-                        AS_NATIVE(fnValue)->function();
-                        auto res=pop();
-                        popN(argsCount+1);
-                        push(res);
-                        break;
-
-                    }
-                }
-
-
                 default: {
                     throw std::runtime_error("Unknown opcode: " + std::to_string(op_code));
                 }
@@ -259,15 +242,6 @@ public:
 
 private:
     void setGlobalVariables() {
-        global->addNativeFunction(
-            "square",
-            [&] () {
-                auto x= AS_NUMBER(peek());
-                push(NUMBER(x*x));
-            },
-            1
-
-        );
         /*global->addConst("x", 10);*/
     }
 
@@ -314,24 +288,11 @@ private:
         return *sp;
     }
 
-    void popN(size_t count)
-    {
-        if (stack.size() == 0)
-        {
-            throw std::runtime_error("Stack empty.");
-        }
-        if (count > stack.size())
-        {
-            throw std::runtime_error("popN(): count greater than stack size.");
-        }
-        sp -= count;
-    }
-
-    EvaluationValue peek(const size_t offset = 0) {
+    EvaluationValue peek() {
         if (sp == stack.begin()) {
             throw std::runtime_error("Stack empty.");
         }
-        return *(sp - 1 - offset);
+        return *(sp - 1);
     }
 
     uint8_t READ_BYTE() {

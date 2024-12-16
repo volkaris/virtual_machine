@@ -26,8 +26,6 @@ private:
         printf("%04zu ", offset);
         uint8_t opcode = co->code[offset];
         switch (opcode) {
-            case OP_CALL :
-                return simpleInstruction("OP_CALL", offset);
             case OP_HALT:
                 return simpleInstruction("OP_HALT", offset);
             case OP_CONST:
