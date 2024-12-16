@@ -634,7 +634,7 @@ TEST_F(VmTest, IfElseIfElseChain) {
 TEST_F(VmTest, IfWithoutBraces) {
     auto result = _vm->exec(R"(
         var x = 5;
-        if (x == 5)
+        if (x == 6)
             x = x + 1;
         x;
     )");

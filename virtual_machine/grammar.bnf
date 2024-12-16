@@ -25,6 +25,7 @@
 "var"              VAR
 
 "func"             FUNC
+"return"            RETURN
 
 "="                ASSIGN
 ";"                SEMICOLON
@@ -70,8 +71,9 @@ enum class ExpType {
     ASSIGNMENT,
     FUNCTION_DECLARATION,
     FUNCTION_CALL,
-    PARAM_LIST,    // NEW: to hold function parameter lists
-    ARG_LIST       // NEW: to hold function argument lists
+    PARAM_LIST,
+    ARG_LIST,
+    RETURN_EXP
 };
 
 struct Exp {
@@ -141,6 +143,10 @@ struct Exp {
         }
     }
 
+  // For return statements
+    Exp(ExpType type, std::shared_ptr<Exp> value)
+        : type(type), varValue(value) {}
+
     // For UNARY_EXP
     Exp(const std::string& unaryOp, std::shared_ptr<Exp> operand)
         : type(ExpType::UNARY_EXP), unaryOp(unaryOp), operand(operand) {}
@@ -198,8 +204,6 @@ using Value = std::shared_ptr<Exp>;
 %token R_PAREN
 
 %token NUMBER
-%token STRING
-%token SYMBOL
 
 %token PLUS
 %token MINUS
@@ -217,137 +221,129 @@ using Value = std::shared_ptr<Exp>;
 %token LOGICAL_OR
 %token LOGICAL_NOT
 
+%token RETURN
+
+%token STRING
+%token SYMBOL
+
 %%
 
 Program
-    : StatementList { $$ = $1; }
+    ::= StatementList
+        { $$ = $1; }
     ;
 
 StatementList
-    : Statement
+    ::= Statement
         { $$ = std::make_shared<Exp>(std::vector<std::shared_ptr<Exp>>{ $1 }); }
     | StatementList Statement
         { $1->statements.push_back($2); $$ = $1; }
     ;
 
 Statement
-    : MatchedStatement
-    | UnmatchedStatement
-    ;
-
-MatchedStatement
-    : IfStatement
+    ::= IfStatement
     | WhileStatement
     | ForStatement
     | FunctionDeclaration
-    | OtherStatement
-    ;
-
-UnmatchedStatement
-    : IfWithoutElse
-    ;
-
-IfStatement
-    : IF L_PAREN Expression R_PAREN MatchedStatement ELSE MatchedStatement
-        { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $5, $7); }
-    ;
-
-IfWithoutElse
-    : IF L_PAREN Expression R_PAREN Statement
-        { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $5, nullptr); }
-    ;
-
-WhileStatement
-    : WHILE L_PAREN Expression R_PAREN MatchedStatement
-        { $$ = std::make_shared<Exp>(ExpType::WHILE_EXP, $3, $5); }
-    ;
-
-ForStatement
-    : FOR L_PAREN ForInit SEMICOLON ForCondition SEMICOLON ForUpdate R_PAREN MatchedStatement
-        { $$ = std::make_shared<Exp>(ExpType::FOR_EXP, $3, $5, $7, $9); }
-    ;
-
-ForInit
-    : VarDeclaration
-        { $$ = $1; }
-    | Expression
-        { $$ = $1; }
-    | %empty
-        { $$ = nullptr; }
-    ;
-
-ForCondition
-    : Expression
-        { $$ = $1; }
-    | %empty
-        { $$ = nullptr; }
-    ;
-
-ForUpdate
-    : Expression
-        { $$ = $1; }
-    | %empty
-        { $$ = nullptr; }
-    ;
-
-OtherStatement
-    : VarDeclaration SEMICOLON
-        { $$ = $1; }
+    | ReturnStatement       /* Add this line to include return statements */
+    | VarDeclaration
     | Expression SEMICOLON
-        { $$ = $1; }
-    | Block
-        { $$ = $1; }
+    ;
+
+ReturnStatement
+    ::= RETURN Expression SEMICOLON
+        { $$ = std::make_shared<Exp>(ExpType::RETURN_EXP, $2); }
+    ;
+
+VarDeclaration
+    ::= VAR SYMBOL ASSIGN Expression SEMICOLON
+        { $$ = std::make_shared<Exp>(ExpType::VAR_DECLARATION, $2, $4); }
     ;
 
 FunctionDeclaration
-    : FUNC SYMBOL L_PAREN ParameterList R_PAREN Block
+    ::= FUNC SYMBOL L_PAREN ParameterList R_PAREN Block
         {
-            // $4 is a PARAM_LIST Exp containing funcParams
             $$ = std::make_shared<Exp>(
-                 ExpType::FUNCTION_DECLARATION,
-                 $2,
-                 $4->funcParams,
-                 $6
+                ExpType::FUNCTION_DECLARATION,
+                $2,
+                *$4,
+                $6
             );
+            delete $4;
         }
     ;
 
 Block
-    : L_BRACE StatementList R_BRACE
+    ::= L_BRACE StatementList R_BRACE
         { $$ = std::make_shared<Exp>($2->statements); }
     ;
 
-VarDeclaration
-    : VAR SYMBOL ASSIGN Expression
-        { $$ = std::make_shared<Exp>(ExpType::VAR_DECLARATION, $2, $4); }
+IfStatement
+    ::= IF L_PAREN Expression R_PAREN Statement ELSE Statement
+        { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $5, $7); }
+    | IF L_PAREN Expression R_PAREN Statement
+        { $$ = std::make_shared<Exp>(ExpType::IF_EXP, $3, $5, nullptr); }
+    ;
+
+WhileStatement
+    ::= WHILE L_PAREN Expression R_PAREN Statement
+        { $$ = std::make_shared<Exp>(ExpType::WHILE_EXP, $3, $5); }
+    ;
+
+ForStatement
+    ::= FOR L_PAREN ForInit SEMICOLON ForCondition SEMICOLON ForUpdate R_PAREN Statement
+        { $$ = std::make_shared<Exp>(ExpType::FOR_EXP, $3, $5, $7, $9); }
+    ;
+
+ForInit
+    ::= VarDeclaration
+        { $$ = $1; }
+    | Expression
+        { $$ = $1; }
+    | /* empty */
+        { $$ = nullptr; }
+    ;
+
+ForCondition
+    ::= Expression
+        { $$ = $1; }
+    | /* empty */
+        { $$ = nullptr; }
+    ;
+
+ForUpdate
+    ::= Expression
+        { $$ = $1; }
+    | /* empty */
+        { $$ = nullptr; }
     ;
 
 Expression
-    : Assignment
+    ::= Assignment
     | LogicalOrExpression
     ;
 
 Assignment
-    : SYMBOL ASSIGN Expression
+    ::= SYMBOL ASSIGN Expression
         { $$ = std::make_shared<Exp>(ExpType::ASSIGNMENT, $1, $3); }
     ;
 
 LogicalOrExpression
-    : LogicalOrExpression LOGICAL_OR LogicalAndExpression
+    ::= LogicalOrExpression LOGICAL_OR LogicalAndExpression
         { $$ = std::make_shared<Exp>("||", $1, $3); }
     | LogicalAndExpression
         { $$ = $1; }
     ;
 
 LogicalAndExpression
-    : LogicalAndExpression LOGICAL_AND EqualityExpression
+    ::= LogicalAndExpression LOGICAL_AND EqualityExpression
         { $$ = std::make_shared<Exp>("&&", $1, $3); }
     | EqualityExpression
         { $$ = $1; }
     ;
 
 EqualityExpression
-    : EqualityExpression EQUALS RelationalExpression
+    ::= EqualityExpression EQUALS RelationalExpression
         { $$ = std::make_shared<Exp>("==", $1, $3); }
     | EqualityExpression NOT_EQUALS RelationalExpression
         { $$ = std::make_shared<Exp>("!=", $1, $3); }
@@ -356,7 +352,7 @@ EqualityExpression
     ;
 
 RelationalExpression
-    : RelationalExpression LESS AdditiveExpression
+    ::= RelationalExpression LESS AdditiveExpression
         { $$ = std::make_shared<Exp>("<", $1, $3); }
     | RelationalExpression GREATER AdditiveExpression
         { $$ = std::make_shared<Exp>(">", $1, $3); }
@@ -369,7 +365,7 @@ RelationalExpression
     ;
 
 AdditiveExpression
-    : AdditiveExpression PLUS MultiplicativeExpression
+    ::= AdditiveExpression PLUS MultiplicativeExpression
         { $$ = std::make_shared<Exp>("+", $1, $3); }
     | AdditiveExpression MINUS MultiplicativeExpression
         { $$ = std::make_shared<Exp>("-", $1, $3); }
@@ -378,7 +374,7 @@ AdditiveExpression
     ;
 
 MultiplicativeExpression
-    : MultiplicativeExpression MULTIPLY UnaryExpression
+    ::= MultiplicativeExpression MULTIPLY UnaryExpression
         { $$ = std::make_shared<Exp>("*", $1, $3); }
     | MultiplicativeExpression DIVIDE UnaryExpression
         { $$ = std::make_shared<Exp>("/", $1, $3); }
@@ -387,14 +383,14 @@ MultiplicativeExpression
     ;
 
 UnaryExpression
-    : LOGICAL_NOT UnaryExpression
+    ::= LOGICAL_NOT UnaryExpression
         { $$ = std::make_shared<Exp>("!", $2); }
     | PrimaryExpression
         { $$ = $1; }
     ;
 
 PrimaryExpression
-    : L_PAREN Expression R_PAREN
+    ::= L_PAREN Expression R_PAREN
         { $$ = $2; }
     | NUMBER
         { $$ = std::make_shared<Exp>(std::stoi($1)); }
@@ -402,59 +398,55 @@ PrimaryExpression
         { $$ = std::make_shared<Exp>($1); }
     | SYMBOL L_PAREN ArgumentList R_PAREN
         {
-           // $3 is ARG_LIST Exp
-           $$ = std::make_shared<Exp>(
-                 ExpType::FUNCTION_CALL,
-                 $1,
-                 $3->callArguments
-               );
+            /* Function call */
+            $$ = std::make_shared<Exp>(
+                ExpType::FUNCTION_CALL,
+                $1,
+                *$3
+            );
+            delete $3;
         }
     | SYMBOL
         { $$ = std::make_shared<Exp>($1); }
     ;
 
-ParameterList
-    : /* empty */
-        {
-          $$ = std::make_shared<Exp>(ExpType::PARAM_LIST, std::vector<std::string>());
-        }
-    | SymbolList
-        { $$ = $1; }
-    ;
-
-SymbolList
-    : SYMBOL
-        {
-          std::vector<std::string> params = {$1};
-          $$ = std::make_shared<Exp>(ExpType::PARAM_LIST, params);
-        }
-    | SymbolList "," SYMBOL
-        {
-          // $1 is PARAM_LIST Exp
-          $1->funcParams.push_back($3);
-          $$ = $1;
-        }
-    ;
-
 ArgumentList
-    : /* empty */
-        {
-          $$ = std::make_shared<Exp>(ExpType::ARG_LIST, std::vector<std::shared_ptr<Exp>>());
-        }
+    ::= /* empty */
+        { $$ = new std::vector<std::shared_ptr<Exp>>(); }
     | ExpressionList
         { $$ = $1; }
     ;
 
 ExpressionList
-    : Expression
+    ::= Expression
         {
-          std::vector<std::shared_ptr<Exp>> args = {$1};
-          $$ = std::make_shared<Exp>(ExpType::ARG_LIST, args);
+            $$ = new std::vector<std::shared_ptr<Exp>>();
+            $$->push_back($1);
         }
     | ExpressionList "," Expression
         {
-          // $1 is ARG_LIST Exp
-          $1->callArguments.push_back($3);
-          $$ = $1;
+            $1->push_back($3);
+            $$ = $1;
         }
     ;
+
+ParameterList
+    ::= /* empty */
+        { $$ = new std::vector<std::string>(); }
+    | SymbolList
+        { $$ = $1; }
+    ;
+
+SymbolList
+    ::= SYMBOL
+        {
+            $$ = new std::vector<std::string>();
+            $$->push_back($1);
+        }
+    | SymbolList "," SYMBOL
+        {
+            $1->push_back($3);
+            $$ = $1;
+        }
+    ;
+

@@ -1,62 +1,38 @@
+//
+// Created by Ilya on 06.10.2024.
+//
 #pragma once
 
+
 #include <unordered_map>
-#include <map>
-#include <memory>
-#include <stdexcept>
+
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "OpCode.h"
 #include "Global.h"
 #include "disassembler/Disassembler.h"
 
+
 class bytecodeGenerator {
 public :
     explicit bytecodeGenerator(const std::shared_ptr<Global> &global)
-            : global(global), disassembler(std::make_unique<Disassembler>(global)), co(nullptr) {
+        : global(global), disassembler(std::make_unique<Disassembler>(global)), co(nullptr) {
     }
 
     CodeObject *compile(const Exp &exp) {
-        functions.clear();
-        functionIndexMap.clear();
-
         co = AS_CODE(ALLOC_CODE("main"));
+
+        //todo do i actually need it?
+        /*locals.clear();*/
         localCount = 0;
-        scopeStack.clear();
-        scopeStack.emplace_back();
+
 
         generate(exp);
 
         //forcefully stop the program
         emit(OP_HALT);
-
-        // Register main as function 0 if needed
-        // But main is just the top-level code object
-        functions.push_back(co);
-
         return co;
     }
-
-    void disassembleBytecode() { disassembler->disassemble(co); }
-
-    // After compilation, you can access functions:
-    std::vector<CodeObject*> getAllFunctions() {
-        return functions;
-    }
-
-private:
-    std::shared_ptr<Global> global;
-    std::unique_ptr<Disassembler> disassembler;
-
-    CodeObject *co;
-    std::vector<std::unordered_map<std::string, int> > scopeStack;
-    int localCount = 0;
-
-    // For function handling
-    std::unordered_map<std::string, int> functionIndexMap;
-    std::vector<CodeObject*> functions;
-
-    static std::map<std::string, uint8_t> compareOperator;
 
     void generate(const Exp &exp) {
         switch (exp.type) {
@@ -79,126 +55,159 @@ private:
                     break;
                 }
 
-                {
-                    int slot = -1;
-                    for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
-                        auto &scope = *scopeIt;
-                        if (scope.find(exp.string) != scope.end()) {
-                            slot = scope[exp.string];
-                            emit(OP_GET_LOCAL);
-                            emit(slot);
-                            break;
-                        }
-                    }
-                    if (slot == -1) {
-                        if (global->exists(exp.string)) {
-                            emit(OP_GET_GLOBAL);
-                            emit(global->getGlobalIndex(exp.string));
-                        } else {
-                            throw std::runtime_error("Undefined variable: " + exp.string);
-                        }
+                int slot = -1;
+
+                // Look through scopes from innermost to outermost
+                for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
+                    auto &scope = *scopeIt;
+                    if (scope.find(exp.string) != scope.end()) {
+                        slot = scope[exp.string];
+                        emit(OP_GET_LOCAL);
+                        emit(slot);
+                        break;
                     }
                 }
+
+                if (slot == -1) {
+                    // Check global variables
+                    if (global->exists(exp.string)) {
+                        emit(OP_GET_GLOBAL);
+                        emit(global->getGlobalIndex(exp.string));
+                    } else {
+                        throw std::runtime_error("Undefined variable: " + exp.string);
+                    }
+                }
+
                 break;
             }
 
             case ExpType::UNARY_EXP: {
                 generate(*exp.operand);
+
                 if (exp.unaryOp == "!") {
                     emit(OP_LOGICAL_NOT);
                 } else {
-                    throw std::runtime_error("Unknown unary operator.");
+                    //todo add support for unary minus and plus operators (++x, --x)
+                    throw std::runtime_error("Unknown operator in unary expression.");
                 }
                 break;
             }
 
+
             case ExpType::BINARY_EXP: {
+
                 if (exp.op == "&&") {
-                    generate(*exp.left);
-                    emit(OP_DUP);
+                    // Short-circuit evaluation for '&&'        //Short-circuit evaluation is when the second argument is not evaluated if the first argument is false.
+                    generate(*exp.left);                        //for binary && ur wont evaluate the right  if the left is false
+
+                    emit(OP_DUP); // Duplicate the value for checking
                     emit(OP_JUMP_IF_FALSE_OR_POP);
                     size_t jumpAddr = co->code.size();
-                    emit16(0);
+                    emit16(0); // Placeholder for jump address
 
                     generate(*exp.right);
 
+                    // Backpatch the jump address
                     size_t afterRight = co->code.size();
-                    patchAddress(jumpAddr, (uint16_t)afterRight);
-                } else if (exp.op == "||") {
+                    patchAddress(jumpAddr, afterRight);
+                } else if (exp.op == "||") {                //for || ur wont evaluate the right  if the left is true
+                    // Short-circuit evaluation for '||'
                     generate(*exp.left);
-                    emit(OP_DUP);
+
+                    emit(OP_DUP); // Duplicate the value for checking
                     emit(OP_JUMP_IF_TRUE_OR_POP);
                     size_t jumpAddr = co->code.size();
-                    emit16(0);
+                    emit16(0); // Placeholder for jump address
 
                     generate(*exp.right);
 
+                    // Backpatch the jump address
                     size_t afterRight = co->code.size();
-                    patchAddress(jumpAddr, (uint16_t)afterRight);
+                    patchAddress(jumpAddr, afterRight);
                 } else {
                     generate(*exp.left);
                     generate(*exp.right);
 
-                    if (exp.op == "+") emit(OP_ADD);
-                    else if (exp.op == "-") emit(OP_SUB);
-                    else if (exp.op == "*") emit(OP_MUL);
-                    else if (exp.op == "/") emit(OP_DIV);
-                    else if (compareOperator.count(exp.op) != 0) {
+                    if (exp.op == "+") {
+                        emit(OP_ADD);
+                    } else if (exp.op == "-") {
+                        emit(OP_SUB);
+                    } else if (exp.op == "*") {
+                        emit(OP_MUL);
+                    } else if (exp.op == "/") {
+                        emit(OP_DIV);
+                    } else if (compareOperator.count(exp.op) != 0) {
                         emit(OP_COMPARE);
                         emit(compareOperator[exp.op]);
                     } else {
-                        throw std::runtime_error("Unknown binary operator: " + exp.op);
+                        throw std::runtime_error("Unknown operator in binary expression.");
                     }
                 }
                 break;
             }
-
             case ExpType::IF_EXP: {
+                // Generate code for condition
                 generate(*exp.condition);
+
+                // Emit OP_JUMP_IF_FALSE with placeholder address
                 emit(OP_JUMP_IF_FALSE);
                 size_t jumpIfFalseAddr = co->code.size();
+
                 emit16(0);
 
                 generate(*exp.thenBranch);
 
                 if (exp.elseBranch != nullptr) {
+                    // Emit OP_JUMP to skip elseBranch
                     emit(OP_JUMP);
                     size_t jumpAddr = co->code.size();
                     emit16(0);
 
-                    uint16_t elseBranchAddr = (uint16_t)co->code.size();
+                    // Backpatch the jumpIfFalse address to point to elseBranch
+                    uint16_t elseBranchAddr = co->code.size();
                     patchAddress(jumpIfFalseAddr, elseBranchAddr);
 
+                    // Generate code for elseBranch
                     generate(*exp.elseBranch);
 
-                    uint16_t afterElseAddr = (uint16_t)co->code.size();
+                    // Backpatch the jump address to point after elseBranch
+                    uint16_t afterElseAddr = co->code.size();
                     patchAddress(jumpAddr, afterElseAddr);
                 } else {
+                    // Emit OP_JUMP to skip over OP_NIL when condition is true
                     emit(OP_JUMP);
                     size_t jumpOverNilAddr = co->code.size();
                     emit16(0);
 
-                    uint16_t nilAddr = (uint16_t)co->code.size();
+                    // Backpatch the jumpIfFalse address to point to OP_NIL
+                    uint16_t nilAddr = co->code.size();
                     patchAddress(jumpIfFalseAddr, nilAddr);
 
+                    // Emit OP_NIL (executed when condition is false)
                     emit(OP_NIL);
 
-                    uint16_t afterNilAddr = (uint16_t)co->code.size();
+                    // Backpatch the jump over OP_NIL to point after OP_NIL
+                    uint16_t afterNilAddr = co->code.size();
                     patchAddress(jumpOverNilAddr, afterNilAddr);
                 }
+
                 break;
             }
-
             case ExpType::VAR_DECLARATION: {
                 generate(*exp.varValue);
+
                 auto &currentScope = scopeStack.back();
+
                 if (currentScope.find(exp.varName) != currentScope.end()) {
                     throw std::runtime_error("Variable " + exp.varName + " already exists.");
                 }
 
                 currentScope[exp.varName] = localCount;
-                co->localNames[localCount] = exp.varName;
+
+                co->localNames[localCount] = exp.varName; // Store the variable name
+
                 localCount++;
+
 
                 emit(OP_SET_LOCAL);
                 emit(currentScope[exp.varName]);
@@ -207,178 +216,272 @@ private:
 
             case ExpType::BLOCK: {
                 scopeStack.emplace_back();
-                int oldLocalCount = localCount;
-                for (auto &stmt: exp.statements) {
+
+                for (const auto &stmt: exp.statements) {
                     generate(*stmt);
                 }
                 scopeStack.pop_back();
-                localCount = oldLocalCount;
                 break;
             }
-
             case ExpType::ASSIGNMENT: {
                 generate(*exp.varValue);
-                {
-                    int slot = -1;
-                    for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
-                        auto &scope = *scopeIt;
-                        if (scope.find(exp.varName) != scope.end()) {
-                            slot = scope[exp.varName];
-                            emit(OP_SET_LOCAL);
-                            emit(slot);
-                            break;
-                        }
-                    }
-                    if (slot == -1) {
-                        if (global->exists(exp.varName)) {
-                            emit(OP_SET_GLOBAL);
-                            emit(global->getGlobalIndex(exp.varName));
-                        } else {
-                            throw std::runtime_error("Undefined variable: " + exp.varName);
-                        }
+
+                int slot = -1;
+
+                // Look through scopes from innermost to outermost
+                for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
+                    auto &scope = *scopeIt;
+                    if (scope.find(exp.varName) != scope.end()) {
+                        slot = scope[exp.varName];
+                        emit(OP_SET_LOCAL);
+                        emit(slot);
+                        break;
                     }
                 }
+
+                if (slot == -1) {
+                    // Check global variables
+                    if (global->exists(exp.varName)) {
+                        emit(OP_SET_GLOBAL);
+                        emit(global->getGlobalIndex(exp.varName));
+                    } else {
+                        throw std::runtime_error("Undefined variable: " + exp.varName);
+                    }
+                }
+
                 break;
             }
 
-            case ExpType::WHILE_EXP: {
+            case ExpType::WHILE_EXP : {
+
                 size_t loopStart = co->code.size();
+
+                // Generate code for condition
                 generate(*exp.condition);
+
+                // Emit OP_JUMP_IF_FALSE with placeholder address
                 emit(OP_JUMP_IF_FALSE);
                 size_t exitJumpAddr = co->code.size();
-                emit16(0);
+                emit16(0); // Placeholder for exit jump
 
+                // Generate code for loop body
                 generate(*exp.whileBody);
 
+                // Emit OP_JUMP to loop start
                 emit(OP_JUMP);
-                emit16((uint16_t)loopStart);
+                emit16(loopStart);
 
+                // Backpatch the exit jump address to point to the code after the loop
                 size_t loopEnd = co->code.size();
-                patchAddress(exitJumpAddr, (uint16_t)loopEnd);
+                patchAddress(exitJumpAddr, loopEnd);
+
                 break;
             }
-
-            case ExpType::FOR_EXP: {
-                // init
+            case  ExpType::FOR_EXP : {
+                // Generate initialization (if any)
                 if (exp.forInit != nullptr) {
                     generate(*exp.forInit);
                 }
 
                 size_t loopStart = co->code.size();
 
+                // Generate condition (if any)
                 if (exp.forCondition != nullptr) {
                     generate(*exp.forCondition);
+
+                    // Emit OP_JUMP_IF_FALSE with placeholder address
                     emit(OP_JUMP_IF_FALSE);
                     size_t exitJumpAddr = co->code.size();
-                    emit16(0);
+                    emit16(0); // Placeholder for exit jump
 
+                    // Generate loop body
                     generate(*exp.forBody);
 
+                    // Generate update expression (if any)
                     if (exp.forUpdate != nullptr) {
                         generate(*exp.forUpdate);
                     }
 
+                    // Emit OP_JUMP to loop start
                     emit(OP_JUMP);
-                    emit16((uint16_t)loopStart);
+                    emit16(loopStart);
 
+                    // Backpatch the exit jump address to point to the code after the loop
                     size_t loopEnd = co->code.size();
-                    patchAddress(exitJumpAddr, (uint16_t)loopEnd);
+                    patchAddress(exitJumpAddr, loopEnd);
                 } else {
-                    // infinite loop
+                    // Infinite loop (condition is empty)
+                    // Emit loop body
                     generate(*exp.forBody);
+
+                    // Generate update expression (if any)
                     if (exp.forUpdate != nullptr) {
                         generate(*exp.forUpdate);
                     }
+
+                    // Emit OP_JUMP to loop start
                     emit(OP_JUMP);
-                    emit16((uint16_t)loopStart);
+                    emit16(loopStart);
                 }
                 break;
             }
+            case ExpType::FUNCTION_DECLARATION : {
+                auto funcCoVal = ALLOC_CODE(exp.funcName);
+                CodeObject* funcCo = AS_CODE(funcCoVal);
 
-            case ExpType::FUNCTION_DECLARATION: {
-                // Create a new CodeObject for the function
-                {
-                    auto funcCoValue = ALLOC_CODE(exp.funcName);
-                    CodeObject *funcCo = AS_CODE(funcCoValue);
+                // Save current compilation state
+                CodeObject* parentCo = co;
+                auto prevScopeStack = scopeStack;
+                int prevLocalCount = localCount;
 
-                    // Save current co
-                    CodeObject *oldCo = co;
-                    int oldLocalCount = localCount;
+                // Prepare a new scope and environment for the function
+                co = funcCo;
+                scopeStack.clear();
+                scopeStack.emplace_back();
+                localCount = 0;
 
-                    co = funcCo;
-                    localCount = 0;
-                    scopeStack.emplace_back();
-
-                    // Assign parameters as locals
-                    for (auto &param : exp.funcParams) {
-                        scopeStack.back()[param] = localCount;
-                        co->localNames[localCount] = param;
-                        localCount++;
-                    }
-
-                    // generate body
-                    generate(*exp.funcBody);
-
-                    // ensure return at end
-                    emit(OP_NIL);
-                    emit(OP_RETURN);
-
-                    scopeStack.pop_back();
-                    localCount = oldLocalCount;
-
-                    co = oldCo;
-
-                    // register function
-                    int funcIdx = (int)functions.size();
-                    functions.push_back(funcCo);
-                    functionIndexMap[exp.funcName] = funcIdx;
+                // Function parameters as local variables:
+                for (int i = 0; i < (int)exp.funcParams.size(); i++) {
+                    const auto& paramName = exp.funcParams[i];
+                    scopeStack.back()[paramName] = localCount;
+                    co->localNames[localCount] = paramName;
+                    localCount++;
                 }
+
+                // Generate code for the function body
+                generate(*exp.funcBody);
+
+                // Emit RETURN at the end of function if not already returned:
+                emit(OP_NIL);
+                emit(OP_RETURN);
+
+                // Restore the previous compiler state
+                co = parentCo;
+                scopeStack = prevScopeStack;
+                localCount = prevLocalCount;
+
+                // Add the function code object to the constants of the parent co:
+                size_t funcIdx = co->constants.size();
+                co->constants.push_back(funcCoVal);
+
+                // Define a global for the function
+                global->define(exp.funcName);
+
+                // Set the global to reference this function code object:
+                int gIndex = global->getGlobalIndex(exp.funcName);
+                // Load the function constant:
+                emit(OP_CONST);
+                emit((uint8_t)funcIdx);
+                // Set the global:
+                emit(OP_SET_GLOBAL);
+                emit((uint8_t)gIndex);
+
                 break;
             }
-
             case ExpType::FUNCTION_CALL: {
-                // push arguments
-                for (auto &arg: exp.callArguments) {
+                // Function call: exp.funcName is the function symbol name
+                // We need to get the function object from either local or global:
+                int slot = -1;
+                for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
+                    auto &scope = *scopeIt;
+                    if (scope.find(exp.funcName) != scope.end()) {
+                        slot = scope[exp.funcName];
+                        break;
+                    }
+                }
+
+                if (slot >= 0) {
+                    emit(OP_GET_LOCAL);
+                    emit((uint8_t)slot);
+                } else {
+                    if (global->exists(exp.funcName)) {
+                        emit(OP_GET_GLOBAL);
+                        emit((uint8_t)global->getGlobalIndex(exp.funcName));
+                    } else {
+                        throw std::runtime_error("Undefined function: " + exp.funcName);
+                    }
+                }
+
+                // Generate code for arguments:
+                for (auto &arg : exp.callArguments) {
                     generate(*arg);
                 }
 
-                auto it = functionIndexMap.find(exp.funcName);
-                if (it == functionIndexMap.end()) {
-                    throw std::runtime_error("Undefined function: " + exp.funcName);
-                }
-                int funcIdx = it->second;
-
+                // Emit CALL with the number of arguments:
                 emit(OP_CALL);
-                emit((uint8_t)funcIdx);
                 emit((uint8_t)exp.callArguments.size());
 
                 break;
             }
+            case ExpType::RETURN_EXP: {
+                // Generate code for the expression we are returning
+                if (exp.varValue != nullptr) {
+                    generate(*exp.varValue);
+                } else {
+                    // If no value is specified, return nil by default
+                    emit(OP_NIL);
+                }
+                emit(OP_RETURN);
+                break;
+            }
+
         }
     }
 
+    void disassembleBytecode() { disassembler->disassemble(co); }
+
+private:
+    //Global object
+    std::shared_ptr<Global> global;
+
+    std::unique_ptr<Disassembler> disassembler;
+
+    // compiling code object
+    CodeObject *co;
+
+    std::vector<std::unordered_map<std::string, int> > scopeStack;
+    /*std::unordered_map<std::string, int> locals;*/
+    int localCount = 0;
+
+    size_t getOffset() { return co->code.size(); }
+
     size_t numericConstIdx(double value) {
-        for (size_t i = 0; i < co->constants.size(); ++i) {
-            if (IS_NUMBER(co->constants[i]) && AS_NUMBER(co->constants[i]) == value)
+        for (auto i = 0; i < co->constants.size(); ++i) {
+            if (!IS_NUMBER(co->constants[i])) {
+                continue;
+            }
+
+            if (AS_NUMBER(co->constants[i]) == value) {
                 return i;
+            }
         }
         co->constants.emplace_back(NUMBER(value));
         return co->constants.size() - 1;
     }
 
     size_t booleanConstIdx(bool value) {
-        for (size_t i = 0; i < co->constants.size(); ++i) {
-            if (IS_BOOL(co->constants[i]) && AS_BOOL(co->constants[i]) == value)
+        for (auto i = 0; i < co->constants.size(); ++i) {
+            if (!IS_BOOL(co->constants[i])) {
+                continue;
+            }
+
+            if (AS_BOOL(co->constants[i]) == value) {
                 return i;
+            }
         }
         co->constants.emplace_back(BOOLEAN(value));
         return co->constants.size() - 1;
     }
 
     size_t stringConstIdx(const std::string &value) {
-        for (size_t i = 0; i < co->constants.size(); ++i) {
-            if (IS_STRING(co->constants[i]) && AS_CPP_STRING(co->constants[i]) == value)
+        for (auto i = 0; i < co->constants.size(); ++i) {
+            if (!IS_STRING(co->constants[i])) {
+                continue;
+            }
+
+            if (AS_CPP_STRING(co->constants[i]) == value) {
                 return i;
+            }
         }
         co->constants.emplace_back(ALLOC_STRING(value));
         return co->constants.size() - 1;
@@ -397,8 +500,10 @@ private:
         co->code[addrPos] = (value >> 8) & 0xFF;
         co->code[addrPos + 1] = value & 0xFF;
     }
+
+    static std::map<std::string, uint8_t> compareOperator;
 };
 
 std::map<std::string, uint8_t> bytecodeGenerator::compareOperator = {
-        {"<", 0}, {">", 1}, {"==", 2}, {">=", 3}, {"<=", 4}, {"!=", 5},
+    {"<", 0}, {">", 1}, {"==", 2}, {">=", 3}, {"<=", 4}, {"!=", 5},
 };
