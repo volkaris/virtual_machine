@@ -7,12 +7,22 @@ using namespace std;
 int main() {
     vm vm;
 
+    auto result = vm.exec(R"(
+        var number = 5;
 
-    int i = 0;
-    for (; !(i >= 5); i = i + 1) {
-        // No operation inside the loop
+func factorial(n) {
+    if (n == 0) {
+        var result = 1;
+    } else {
+        var temp = factorial(n - 1);
+        var result = n * temp;
     }
-    std::cout << i;
+}
+
+var fact = factorial(number);
+    )");
+
+    int x=10;
 
 //     ForLoopVariableScope  ForLoopVariableScopeCheck
 }
