@@ -325,6 +325,69 @@ public :
                 }
                 break;
             }
+            case ExpType::FUNCTION_DECLARATION: {
+                std::string functionName = exp.varName;
+                std::shared_ptr<Exp> functionBody = exp.forBody;
+
+                // Создайте новый CodeObject для функции
+                CodeObject* funcCo = AS_CODE(ALLOC_CODE(functionName));
+
+                funcCo->name = functionName;
+
+                // Компилируйте тело функции
+                bytecodeGenerator funcGenerator(global);
+                funcGenerator.compile(*functionBody);
+
+                // Добавьте функцию в пул констант
+                size_t funcConstIdx = functionConstIdx(funcCo);
+
+                // Определите функцию как глобальную переменную
+                emit(OP_CONST);
+                emit16(funcConstIdx);
+
+                // Создайте объявление переменной для функции
+                // Например, funcName = <funcCo>
+                // Используйте существующий ExpType::VAR_DECLARATION
+                auto varDecl = std::make_shared<Exp>(ExpType::VAR_DECLARATION, functionName, std::make_shared<Exp>(funcConstIdx));
+                generate(*varDecl);
+
+                break;
+            }
+            case ExpType::FUNCTION_CALL: {
+                std::string functionName = exp.string;
+                std::vector<std::shared_ptr<Exp>> arguments = exp.callArguments; // Предполагается, что exp.arguments содержит аргументы
+
+                // Сгенерируйте код для всех аргументов
+                for (auto &arg : arguments) {
+                    generate(*arg);
+                }
+
+                // Получите индекс функции в глобальных переменных
+                // Здесь предполагается, что функции хранятся как глобальные переменные
+                emit(OP_GET_GLOBAL);
+                emit(global->getGlobalIndex(functionName));
+
+                // Вызовите функцию с количеством аргументов
+                emit(OP_CALL);
+                emit(arguments.size());
+
+                break;
+            }
+            case ExpType::RETURN_STATEMENT: {
+                std::shared_ptr<Exp> returnValue = exp.returnValue;
+
+                // Сгенерируйте код для выражения возврата
+                generate(*returnValue);
+
+                // Эмитируйте OP_RETURN
+                emit(OP_RETURN);
+
+                break;
+            }
+
+
+
+
         }
     }
 
@@ -400,6 +463,23 @@ private:
         co->code[addrPos] = (value >> 8) & 0xFF;
         co->code[addrPos + 1] = value & 0xFF;
     }
+
+    size_t functionConstIdx(CodeObject* funcCo) {
+        for (size_t i = 0; i < co->constants.size(); ++i) {
+            if (IS_CODE(co->constants[i]) && AS_CODE(co->constants[i]) == funcCo) {
+                return i;
+            }
+        }
+        co->constants.emplace_back(ALLOC_CODE(funcCo->name));
+        AS_CODE(co->constants.back())->name = funcCo->name;
+        // Копируйте код функции
+        AS_CODE(co->constants.back())->code = funcCo->code;
+        AS_CODE(co->constants.back())->constants = funcCo->constants;
+        AS_CODE(co->constants.back())->localNames = funcCo->localNames;
+        return co->constants.size() - 1;
+    }
+
+
 
     static std::map<std::string, uint8_t> compareOperator;
 };

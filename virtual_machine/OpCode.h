@@ -33,6 +33,8 @@ constexpr auto OP_DUP= 0X18;
 
 constexpr auto OP_NIL = 0x20;
 
+constexpr auto OP_CALL = 0x19;    // Вызов функции с N аргументами
+constexpr auto OP_RETURN = 0x1A;  // Возврат из функции
 
 inline std::string opcodeToString(uint8_t opcode) {
     switch (opcode) {
