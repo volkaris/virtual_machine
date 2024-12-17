@@ -31,6 +31,9 @@ struct EvaluationValue {
         double number;
         Object* object;
     };*/
+
+
+
     std::variant<bool, double, Object*,std::nullptr_t> value;
 
     [[nodiscard]] bool boolean () const {

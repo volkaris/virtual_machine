@@ -1,37 +1,58 @@
 #pragma once
+
 #include <vector>
 #include <string>
-#include "OpCode.h"
+#include <memory>
 #include <array>
+#include "OpCode.h"
 #include "parser.h"
-using namespace syntax;
-
-#define STACK_LIMIT 512
-
-
 #include "EvaluationValue.h"
 #include "bytecodeGenerator.h"
 #include "Global.h"
 
+#define STACK_LIMIT 512
+
+struct CallFrame {
+    CodeObject *co; // Pointer to the function's CodeObject
+    uint8_t *ip; // Instruction pointer within the function's bytecode
+    std::vector<EvaluationValue> locals; // Local variables for the function
+
+    CallFrame(CodeObject *codeObject)
+        : co(codeObject), ip(codeObject->code.data()) {
+        // Determine the maximum slot index
+        int maxSlot = -1;
+        for (const auto &pair: co->localNames) {
+            if (pair.first > maxSlot) {
+                maxSlot = pair.first;
+            }
+        }
+        // Initialize locals vector with NIL
+        locals.resize(maxSlot + 1, NIL());
+    }
+};
+
 class vm {
 public:
     vm() : global(std::make_shared<Global>()),
-           _parser(std::make_unique<parser>()),
+           _parser(std::make_unique<syntax::parser>()),
            _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {
         setGlobalVariables();
-        locals.resize(1024);
     }
 
     EvaluationValue exec(const std::string &program) {
         std::shared_ptr<Exp> ast = _parser->parse(program);
-
         co = _bytecodeGenerator->compile(*ast);
 
+        // Initialize the main call frame
+        callStack.emplace_back(co);
 
-        ip = &co->code[0];
+        // Initialize the instruction pointer in the main call frame
+        CallFrame &currentFrame = callStack.back();
+        currentFrame.ip = currentFrame.co->code.data();
         sp = stack.begin();
 
-        _bytecodeGenerator->disassembleBytecode();
+        // Optionally, disassemble bytecode for debugging
+        // _bytecodeGenerator->disassembleBytecode();
 
         return evalExp();
     }
@@ -66,15 +87,18 @@ public:
     }
 
     EvaluationValue evalExp() {
-        for (;;) {
-            auto op_code = READ_BYTE();
+        while (!callStack.empty()) {
+            CallFrame &currentFrame = callStack.back();
+            uint8_t *&ip = currentFrame.ip; // Reference to the frame's ip
+
+            auto op_code = READ_BYTE(ip);
             switch (op_code) {
                 case OP_HALT:
                     return pop();
 
                 case OP_CONST:
-                    push(GET_CONST());
-                break;
+                    push(GET_CONST(ip, currentFrame.co));
+                    break;
 
                 case OP_ADD: {
                     auto right = pop();
@@ -108,8 +132,8 @@ public:
                     auto right = pop();
                     auto left = pop();
 
-                    auto casted_left = AS_NUMBER(left);
-                    auto casted_right = AS_NUMBER(right);
+                    double casted_left = AS_NUMBER(left);
+                    double casted_right = AS_NUMBER(right);
                     if (casted_right == 0) {
                         throw std::runtime_error("division by zero");
                     }
@@ -118,18 +142,18 @@ public:
                 }
 
                 case OP_COMPARE: {
-                    auto compareOp = READ_BYTE();
+                    auto compareOp = READ_BYTE(ip);
 
                     auto right = pop();
                     auto left = pop();
 
                     if (IS_NUMBER(left) && IS_NUMBER(right)) {
-                        auto castedLeft = AS_NUMBER(left);
-                        auto castedRight = AS_NUMBER(right);
+                        double castedLeft = AS_NUMBER(left);
+                        double castedRight = AS_NUMBER(right);
                         compare_values(castedLeft, castedRight, compareOp);
                     } else if (IS_STRING(left) && IS_STRING(right)) {
-                        auto castedLeft = AS_CPP_STRING(left);
-                        auto castedRight = AS_CPP_STRING(right);
+                        std::string castedLeft = AS_CPP_STRING(left);
+                        std::string castedRight = AS_CPP_STRING(right);
                         compare_values(castedLeft, castedRight, compareOp);
                     } else {
                         throw std::runtime_error("Type error in COMPARE operation.");
@@ -138,23 +162,19 @@ public:
                 }
 
                 case OP_JUMP_IF_FALSE: {
-                    uint16_t addr = READ_SHORT();
+                    uint16_t addr = READ_SHORT(ip);
                     EvaluationValue condition = pop();
                     if (IS_BOOL(condition) && !AS_BOOL(condition)) {
-                        ip = &co->code[addr];
-                    } /*else {
-                        // Skip the jump address
-                        // No action needed since ip already points to next instruction
-                    }*/
+                        ip = &currentFrame.co->code[addr];
+                    }
                     break;
                 }
 
                 case OP_JUMP: {
-                    uint16_t addr = READ_SHORT();
-                    ip = &co->code[addr];
+                    uint16_t addr = READ_SHORT(ip);
+                    ip = &currentFrame.co->code[addr];
                     break;
                 }
-
 
                 case OP_NIL: {
                     push(NIL());
@@ -162,26 +182,26 @@ public:
                 }
 
                 case OP_GET_GLOBAL: {
-                    auto globalIndex = READ_BYTE();
+                    auto globalIndex = READ_BYTE(ip);
                     push(global->get(globalIndex).value);
                     break;
                 }
 
                 case OP_SET_GLOBAL: {
-                    auto globalIndex = READ_BYTE();
+                    auto globalIndex = READ_BYTE(ip);
                     global->set(globalIndex, pop());
                     break;
                 }
 
                 case OP_SET_LOCAL: {
-                    uint8_t slot = READ_BYTE();
-                    locals[slot] = pop();
+                    uint8_t slot = READ_BYTE(ip);
+                    currentFrame.locals[slot] = pop();
                     break;
                 }
 
                 case OP_GET_LOCAL: {
-                    uint8_t slot = READ_BYTE();
-                    push(locals[slot]);
+                    uint8_t slot = READ_BYTE(ip);
+                    push(currentFrame.locals[slot]);
                     break;
                 }
 
@@ -193,13 +213,12 @@ public:
                 }
 
                 case OP_JUMP_IF_FALSE_OR_POP: {
-                    uint16_t address = READ_SHORT();
-
+                    uint16_t address = READ_SHORT(ip);
                     auto value = peek();
 
                     if (!isTruth(value)) {
                         pop(); // Remove the value
-                        ip = &co->code[address];
+                        ip = &currentFrame.co->code[address];
                     } else {
                         pop(); // Remove the value
                     }
@@ -207,12 +226,12 @@ public:
                 }
 
                 case OP_JUMP_IF_TRUE_OR_POP: {
-                    uint16_t address = READ_SHORT();
+                    uint16_t address = READ_SHORT(ip);
                     auto value = peek();
 
                     if (isTruth(value)) {
                         pop(); // Remove the value
-                        ip = &co->code[address];
+                        ip = &currentFrame.co->code[address];
                     } else {
                         pop(); // Remove the value
                     }
@@ -229,15 +248,73 @@ public:
                     push(value); // Push a copy onto the stack
                     break;
                 }
+
+                case OP_CALL: {
+                    uint8_t argCount = READ_BYTE(ip);
+
+                    // Pop arguments in reverse order to maintain correct order
+                    std::vector<EvaluationValue> args(argCount);
+                    for (int i = argCount - 1; i >= 0; --i) {
+                        args[i] = pop();
+                    }
+
+                    // Pop the function object
+                    EvaluationValue funcVal = pop();
+                    if (!IS_OBJECT(funcVal) || !IS_CODE(funcVal)) {
+                        throw std::runtime_error("Attempting to call a non-function.");
+                    }
+
+                    CodeObject *functionCo = AS_CODE(funcVal);
+
+                    // Create a new call frame for the function
+                    CallFrame newFrame(functionCo);
+
+                    // Assign arguments to the function's local variables
+                    size_t paramIndex = 0;
+                    // Iterate over slot indices in ascending order
+                    for (int slot = 0; slot < functionCo->localNames.size(); ++slot) {
+                        auto it = functionCo->localNames.find(slot);
+                        if (it != functionCo->localNames.end()) {
+                            if (paramIndex < args.size()) {
+                                newFrame.locals[slot] = args[paramIndex];
+                                paramIndex++;
+                            } else {
+                                newFrame.locals[slot] = NIL();
+                            }
+                        }
+                    }
+
+                    // Push the new call frame onto the stack
+                    callStack.emplace_back(newFrame);
+
+                    break;
+                }
+
+                case OP_RETURN: {
+                    // Pop the return value
+                    EvaluationValue returnValue = pop();
+
+                    // Pop the current call frame
+                    callStack.pop_back();
+
+                    if (callStack.empty()) {
+                        // If no more call frames, halt execution
+                        return returnValue;
+                    }
+
+                    // Push the return value onto the previous frame's stack
+                    push(returnValue);
+
+                    break;
+                }
+
                 default: {
                     throw std::runtime_error("Unknown opcode: " + std::to_string(op_code));
                 }
-
-
-
-
             }
+            // No need to set currentFrame.ip = ip; since ip is a reference to currentFrame.ip
         }
+        return NIL();
     }
 
 private:
@@ -274,9 +351,9 @@ private:
         sp++;
     }
 
-    uint16_t READ_SHORT() {
-        uint16_t high = READ_BYTE();
-        uint16_t low = READ_BYTE();
+    uint16_t READ_SHORT(uint8_t *&ip) {
+        uint16_t high = READ_BYTE(ip);
+        uint16_t low = READ_BYTE(ip);
         return (high << 8) | low;
     }
 
@@ -284,7 +361,7 @@ private:
         if (sp == stack.begin()) {
             throw std::runtime_error("Stack empty.");
         }
-        --sp;
+        sp--;
         return *sp;
     }
 
@@ -295,12 +372,12 @@ private:
         return *(sp - 1);
     }
 
-    uint8_t READ_BYTE() {
+    uint8_t READ_BYTE(uint8_t *&ip) {
         return *ip++;
     }
 
-    EvaluationValue GET_CONST() {
-        return co->constants[READ_BYTE()];
+    EvaluationValue GET_CONST(uint8_t *&ip, CodeObject *co) {
+        return co->constants[READ_BYTE(ip)];
     }
 
 
@@ -310,19 +387,15 @@ private:
     std::shared_ptr<Global> global;
 
     //Stack pointer
-    std::array<EvaluationValue, STACK_LIMIT>::iterator sp;
+    std::array<EvaluationValue, STACK_LIMIT> stack;
+    std::array<EvaluationValue, STACK_LIMIT>::iterator sp = stack.begin();
 
-    //Instruction pointer (Program counter)
-    uint8_t *ip;
-
-    std::unique_ptr<parser> _parser;
-
-    //Constant pool
-    std::vector<EvaluationValue> constants;
+    std::unique_ptr<syntax::parser> _parser;
 
     // Code object
     CodeObject *co;
 
-    std::array<EvaluationValue, STACK_LIMIT> stack;
+    std::vector<CallFrame> callStack;
+
     std::unique_ptr<bytecodeGenerator> _bytecodeGenerator;
 };
