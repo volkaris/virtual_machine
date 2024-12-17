@@ -325,6 +325,109 @@ public :
                 }
                 break;
             }
+
+            case ExpType::FUNCTION_DECLARATION: {
+                // Extract function details
+                std::string functionName = exp.funcName;
+                std::vector<std::string> params = exp.funcParams;
+                std::shared_ptr<Exp> body = exp.funcBody;
+
+                // Create a new CodeObject for the function
+                CodeObject *functionCo = AS_CODE(ALLOC_CODE(functionName));
+
+                // Add the compiled functionCo to the constants of the main CodeObject
+                size_t functionConstIdx = co->constants.size();
+                co->constants.emplace_back(ALLOC_CODE_OBJECT(functionCo)); // Correctly store the compiled function object
+
+                // Emit OP_CONST with the function's constant index
+                emit(OP_CONST);
+                emit(functionConstIdx);
+
+                // Define the function in the global variables
+                if (!global->exists(functionName)) {
+                    global->define(functionName);
+                }
+                int globalIdx = global->getGlobalIndex(functionName);
+
+                // Emit OP_SET_GLOBAL to assign the function to its name
+                emit(OP_SET_GLOBAL);
+                emit(globalIdx);
+
+                // Now switch to the function's CodeObject to generate the body
+                // Save the current CodeObject
+                CodeObject *previousCo = co;
+
+                // Switch to the function's CodeObject
+                co = functionCo;
+
+                // Initialize a new scope for the function
+                scopeStack.emplace_back();
+                localCount = 0;
+
+                // Assign parameters to local variables
+                for (const auto& param : params) {
+                    scopeStack.back()[param] = localCount;
+                    co->localNames[localCount] = param;
+                    localCount++;
+                }
+
+                // Generate bytecode for the function body
+                generate(*body);
+
+                // Ensure the function ends with OP_RETURN
+                emit(OP_RETURN);
+
+                // Restore the previous CodeObject and scope
+                co = previousCo;
+                scopeStack.pop_back();
+
+                break;
+            }
+
+            case ExpType::FUNCTION_CALL: {
+                // Extract the function name and arguments
+                std::string functionName = exp.funcName; // Assuming 'string' holds the function name
+
+                // Get the function's index in global variables
+                int functionIdx = global->getGlobalIndex(functionName);
+                if (functionIdx == -1) {
+                    throw std::runtime_error("Undefined function: " + functionName);
+                }
+
+                // Emit OP_GET_GLOBAL to retrieve the function object
+                emit(OP_GET_GLOBAL);
+                emit(functionIdx);
+
+                // Generate bytecode for each argument
+                for (const auto& arg : exp.callArguments) {
+                    generate(*arg);
+                }
+
+                // Emit OP_CALL with the number of arguments
+                emit(OP_CALL);
+                emit(static_cast<uint8_t>(exp.callArguments.size()));
+
+                break;
+            }
+
+            case ExpType::RETURN_STATEMENT: {
+                if (exp.returnValue != nullptr) {
+                    // Generate bytecode for the return expression
+                    generate(*exp.returnValue);
+                } else {
+                    // If no return value, push NIL
+                    emit(OP_NIL);
+                }
+
+                // Emit OP_RETURN to exit the function
+                emit(OP_RETURN);
+
+                break;
+            }
+
+
+
+
         }
     }
 
@@ -399,6 +502,13 @@ private:
     void patchAddress(size_t addrPos, uint16_t value) {
         co->code[addrPos] = (value >> 8) & 0xFF;
         co->code[addrPos + 1] = value & 0xFF;
+    }
+
+    inline EvaluationValue ALLOC_CODE_OBJECT(CodeObject* codeObject) {
+        EvaluationValue val;
+        val.type = EvaluationValueType::OBJECT;
+        val.value = static_cast<Object*>(codeObject);
+        return val;
     }
 
     static std::map<std::string, uint8_t> compareOperator;

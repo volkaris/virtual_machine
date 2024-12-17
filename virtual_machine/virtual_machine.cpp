@@ -1,18 +1,26 @@
 #include <iostream>
 #include "vm.h"
-
 using namespace std;
-
-
 int main() {
     vm vm;
+    auto result = vm.exec(R"(
 
+var number = 5;
 
-    int i = 0;
-    for (; !(i >= 5); i = i + 1) {
-        // No operation inside the loop
+func factorial(n) {
+    if (n == 0) {
+        return 1;
     }
-    std::cout << i;
+    else {
+        return n * factorial(n - 1);
+    }
+}
 
-//     ForLoopVariableScope  ForLoopVariableScopeCheck
+var fact = factorial(number);
+
+fact;
+
+)");
+    int x=10;
+    result.type;
 }

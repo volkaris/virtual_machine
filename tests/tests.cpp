@@ -1116,3 +1116,169 @@ TEST_F(VmTest, ForLoopFactorial) {
     ASSERT_TRUE(IS_NUMBER(result));
     EXPECT_EQ(AS_NUMBER(result), 120); // 1 * 2 * 3 * 4 * 5 = 120
 }
+
+TEST_F(VmTest, BasicFunctionCall) {
+
+
+    // Simple function definition: int add(int a, int b) { return a + b; }
+   auto result = _vm->exec (R"(
+        func add(a, b) {
+            return a + b;
+        }
+        add(3, 4);
+    )");
+
+
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 7);
+
+
+}
+
+TEST_F(VmTest, RecursiveFactorial) {
+
+    // Factorial function: int factorial(n) { if (n == 0) return 1; return n * factorial(n - 1); }
+    auto result = _vm->exec ( R"(
+       var number = 5;
+
+func factorial(n) {
+    if (n == 0) {
+        return 1;
+    }
+    else {
+        return n * factorial(n - 1);
+    }
+}
+
+var fact = factorial(number);
+
+fact;
+    )");
+
+    // Execute the code
+
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 120); // 1 * 2 * 3 * 4 * 5 = 120
+}
+
+
+TEST_F(VmTest, RecursiveFactorial2) {
+
+    // Factorial function: int factorial(n) { if (n == 0) return 1; return n * factorial(n - 1); }
+    auto result = _vm->exec ( R"(
+       func factorial(n) {
+    if (n == 0) {
+        return 1;
+    }
+    else {
+        return n * factorial(n - 1);
+    }
+}
+
+factorial(5);
+
+
+    )");
+
+    // Execute the code
+
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 120); // 1 * 2 * 3 * 4 * 5 = 120
+}
+
+
+TEST_F(VmTest, FunctionWithReturnType) {
+
+
+    // Function definition: int multiply(int a, int b) { return a * b; }
+  auto result = _vm->exec (  R"(
+        func multiply(a, b) {
+            return a * b;
+        }
+        multiply(6, 7);
+    )");
+
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 42);
+
+}
+
+TEST_F(VmTest, FunctionWithMultipleParameters) {
+
+
+
+   auto result = _vm->exec (   R"(
+        func sum(a, b, c) {
+            return a + b + c;
+        }
+        sum(10, 20, 30);
+    )");
+
+
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 60);
+
+}
+
+/*TEST_F(VmTest, FunctionWithGlobalVariables) {
+
+
+
+     auto result = _vm->exec ( R"(
+        var x = 5;
+        func increment() {
+            x = x + 1;
+        }
+        increment();
+        increment();
+        x;
+    )");
+
+    // Execute the code
+
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 7);
+}*/
+
+/*TEST_F(VmTest, FunctionWithMultipleReturnStatements) {
+
+    // Function definition: int checkEvenOdd(int n) { if (n % 2 == 0) return 0; return 1; }
+    auto result = _vm->exec (R"(
+        func checkEvenOdd(n) {
+            if (n % 2 == 0) return 0;
+            return 1;
+        }
+        checkEvenOdd(4);
+    )");
+
+
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 0);
+}*/
+
+TEST_F(VmTest, FunctionWithVariableScoping) {
+
+
+    // Function definition: int scopeTest() { var a = 10; return a; }
+    auto result = _vm->exec ( R"(
+        func scopeTest() {
+            var a = 10;
+            return a;
+        }
+        scopeTest();
+    )");
+
+    ASSERT_TRUE(IS_NUMBER(result));
+    EXPECT_EQ(AS_NUMBER(result), 10);
+}
+
+
+
+
