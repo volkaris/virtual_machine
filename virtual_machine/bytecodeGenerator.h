@@ -6,12 +6,19 @@
 
 #include <unordered_map>
 
+/*#include "CodeObject.h"*/
+/*#include "DecodedInstruction.h"*/
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "OpCode.h"
 #include "Global.h"
+#include "helpers.h"
+#include "StringObject.h"
 #include "disassembler/Disassembler.h"
+/*#include "disassembler/Disassembler.h"*/
 
+
+struct CodeObject;
 
 class bytecodeGenerator {
 public :

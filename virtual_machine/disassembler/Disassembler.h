@@ -3,24 +3,21 @@
 */
 
 #pragma once
-#include <iomanip>
-#include <iostream>
-#include "EvaluationValue.h"
-#include "OpCode.h"
+
 
 class Disassembler {
 public:
-    explicit Disassembler(const std::shared_ptr<Global>& global) : global(global) {}
+    explicit Disassembler(const std::shared_ptr<Global>& global)  {}
 
     void disassemble(CodeObject* co) {
-        std::cout << "== Disassembly of " << co->name << " ==" << std::endl;
+        /*std::cout << "== Disassembly of " << co->name << " ==" << std::endl;
         size_t offset = 0;
         while (offset < co->code.size()) {
             offset = disassembleInstruction(co, offset);
-        }
+        }*/
     }
 
-private:
+/*private:
     size_t disassembleInstruction(CodeObject* co, size_t offset) {
         printf("%04zu ", offset);
         uint8_t opcode = co->code[offset];
@@ -58,7 +55,7 @@ private:
             /*case OP_LOGICAL_AND:
                 return simpleInstruction("OP_LOGICAL_AND", offset);
             case OP_LOGICAL_OR:
-                return simpleInstruction("OP_LOGICAL_OR", offset);*/
+                return simpleInstruction("OP_LOGICAL_OR", offset);#1#
             case OP_JUMP_IF_FALSE_OR_POP:
                 return jumpInstruction("OP_JUMP_IF_FALSE_OR_POP", 1, co, offset);
             case OP_JUMP_IF_TRUE_OR_POP:
@@ -123,5 +120,5 @@ private:
         return offset + 2;
     }
 
-    std::shared_ptr<Global> global;
+    std::shared_ptr<Global> global;*/
 };
