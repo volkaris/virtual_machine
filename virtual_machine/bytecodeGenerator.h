@@ -7,11 +7,10 @@
 #include <unordered_map>
 
 #include "parser.h"
+#include "EvaluationValue.h"
+#include "OpCode.h"
 #include "Global.h"
 #include "disassembler/Disassembler.h"
-#include "CodeObject.h"
-#include "handlers.h"
-#include "OpCode.h"
 
 
 class bytecodeGenerator {
@@ -30,67 +29,10 @@ public :
 
         generate(exp);
 
-    // Run your previous optimization pass if any
-    // optimizeBytecode(co);
-
-    // Now finalize direct threading
-        finalizeDirectThreading(co);
-
+        //forcefully stop the program
+        emit(OP_HALT);
         return co;
     }
-
-    void finalizeDirectThreading(CodeObject* co) {
-    size_t i = 0;
-    while (i < co->code.size()) {
-        uint8_t opcode = co->code[i++];
-        InstructionHandler fn = handlers[opcode];
-
-        DecodedInstruction inst;
-        inst.fn = fn;
-
-        // Determine how many argument bytes this instruction has and read them
-        // For example:
-        // OP_CONST: 1 argument byte (index)
-        // OP_COMPARE: 1 argument byte
-        // OP_JUMP, OP_JUMP_IF_FALSE: 2 argument bytes (address)
-        // OP_GET_GLOBAL, OP_SET_GLOBAL, OP_GET_LOCAL, OP_SET_LOCAL: 1 argument byte
-        // For instructions without arguments, 0 argument bytes.
-
-        switch (opcode) {
-            case OP_CONST:
-            case OP_GET_GLOBAL:
-            case OP_SET_GLOBAL:
-            case OP_GET_LOCAL:
-            case OP_SET_LOCAL:
-            case OP_CALL:
-            case OP_COMPARE:
-                // 1-byte argument
-                inst.args.push_back(co->code[i++]);
-            break;
-
-            case OP_JUMP:
-            case OP_JUMP_IF_FALSE:
-            case OP_JUMP_IF_FALSE_OR_POP:
-            case OP_JUMP_IF_TRUE_OR_POP:
-                // 2-byte argument (address)
-                inst.args.push_back(co->code[i++]);
-            inst.args.push_back(co->code[i++]);
-            break;
-
-            // Add cases for instructions that have arguments
-            // Instructions without arguments: do nothing
-
-            default:
-                // No arguments
-                    break;
-        }
-
-        co->decodedInstructions.push_back(std::move(inst));
-    }
-
-    // Optionally clear co->code since we no longer need it:
-    co->code.clear();
-}
 
     void generate(const Exp &exp) {
         switch (exp.type) {
