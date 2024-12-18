@@ -7,45 +7,47 @@
 
 \s+                %empty
 
-"return"           RETURN
-"func"             FUNC
-"if"               IF
-"while"            WHILE
-"for"              FOR
-"var"              VAR
+"return"                 RETURN
+"func"                   FUNC
+"if"                     IF
+"else"                   ELSE
+"while"                  WHILE
+"for"                    FOR
+"var"                    VAR
 
-"=="               EQUALS
-"!="               NOT_EQUALS
-"<="               LESS_EQUAL
-">="               GREATER_EQUAL
-"<"                LESS
-">"                GREATER
+"=="                     EQUALS
+"!="                     NOT_EQUALS
+"<="                     LESS_EQUAL
+">="                     GREATER_EQUAL
+"<"                      LESS
+">"                      GREATER
 
-"="                ASSIGN
-";"                SEMICOLON
+"="                      ASSIGN
+";"                      SEMICOLON
 
-"("                L_PAREN
-")"                R_PAREN
+"("                     L_PAREN
+")"                     R_PAREN
+"{"                     L_BRACE
+"}"                     R_BRACE
+"["                     L_BRACKET        /* Added for arrays */
+"]"                     R_BRACKET        /* Added for arrays */
+","                      COMMA            /* Added for arrays */
 
-"{"                L_BRACE
-"}"                R_BRACE
+"&&"                     LOGICAL_AND
+"||"                   LOGICAL_OR
+"!"                      LOGICAL_NOT
 
-"else"             ELSE
+"+"                     PLUS
+"-"                      MINUS
+"*"                     MULTIPLY
+"/"                      DIVIDE
 
-"&&"               LOGICAL_AND
-"||"               LOGICAL_OR
-"!"                LOGICAL_NOT
+\"[^\"]*\"               STRING
 
-"+"                PLUS
-"-"                MINUS
-"*"                MULTIPLY
-"/"                DIVIDE
+\d+                      NUMBER
 
-\"[^\"]*\"         STRING
+[\w]+                    SYMBOL
 
-\d+                NUMBER
-
-[\w]+              SYMBOL
 
 /lex
 
@@ -71,7 +73,9 @@ enum class ExpType {
     FUNCTION_CALL,
     PARAM_LIST,
     ARG_LIST,
-    RETURN_STATEMENT
+    RETURN_STATEMENT,
+    ARRAY_LITERAL,    /* Added for arrays */
+    ARRAY_ACCESS      /* Added for arrays */
 };
 
 struct Exp {
@@ -160,6 +164,7 @@ struct Exp {
 
     Exp(ExpType type, std::shared_ptr<Exp> returnValue)
         : type(type), returnValue(returnValue) {}
+
 };
 
 using Value = std::shared_ptr<Exp>;
@@ -181,6 +186,9 @@ using Value = std::shared_ptr<Exp>;
 %token R_BRACE
 %token L_PAREN
 %token R_PAREN
+%token L_BRACKET      /* Added for arrays */
+%token R_BRACKET      /* Added for arrays */
+%token COMMA          /* Added for arrays */
 
 %token NUMBER
 %token STRING
@@ -205,7 +213,8 @@ using Value = std::shared_ptr<Exp>;
 %%
 
 Program
-    : StatementList { $$ = $1; }
+    : StatementList
+        { $$ = $1; }
     ;
 
 StatementList
@@ -258,21 +267,21 @@ ForInit
         { $$ = $1; }
     | Expression
         { $$ = $1; }
-    | %empty
+    | /* empty */
         { $$ = nullptr; }
     ;
 
 ForCondition
     : Expression
         { $$ = $1; }
-    | %empty
+    | /* empty */
         { $$ = nullptr; }
     ;
 
 ForUpdate
     : Expression
         { $$ = $1; }
-    | %empty
+    | /* empty */
         { $$ = nullptr; }
     ;
 
@@ -319,6 +328,8 @@ Expression
 
 Assignment
     : SYMBOL ASSIGN Expression
+        { $$ = std::make_shared<Exp>(ExpType::ASSIGNMENT, $1, $3); }
+    | ArrayAccess ASSIGN Expression    /* Support assigning to array elements */
         { $$ = std::make_shared<Exp>(ExpType::ASSIGNMENT, $1, $3); }
     ;
 
@@ -398,8 +409,25 @@ PrimaryExpression
                  $3->callArguments
                );
         }
+    | SYMBOL L_BRACKET Expression R_BRACKET    /* Array Indexing */
+        { $$ = std::make_shared<Exp>(ExpType::ARRAY_ACCESS, $1, $3); }
+    | L_BRACKET ExpressionList R_BRACKET       /* Array Literal */
+        { auto exp = std::make_shared<Exp>(ExpType::ARRAY_LITERAL, $2->callArguments);
+                 exp->statements = $2->callArguments;
+                 $$ = exp; }
+    | L_BRACKET R_BRACKET                       /* Empty Array Literal */
+        {
+            auto exp = std::make_shared<Exp>(ExpType::ARRAY_LITERAL, std::vector<std::shared_ptr<Exp>>());
+            $$ = exp;
+        }
+
     | SYMBOL
         { $$ = std::make_shared<Exp>($1); }
+    ;
+
+ArrayAccess
+    : SYMBOL L_BRACKET Expression R_BRACKET
+        { $$ = std::make_shared<Exp>(ExpType::ARRAY_ACCESS, $1, $3); }
     ;
 
 ParameterList
@@ -414,10 +442,10 @@ ParameterList
 SymbolList
     : SYMBOL
         {
-          std::vector<std::string> params = {$1};
+          std::vector<std::string> params = { $1 };
           $$ = std::make_shared<Exp>(ExpType::PARAM_LIST, params);
         }
-    | SymbolList "," SYMBOL
+    | SymbolList COMMA SYMBOL
         {
           $1->funcParams.push_back($3);
           $$ = $1;
@@ -436,12 +464,15 @@ ArgumentList
 ExpressionList
     : Expression
         {
-          std::vector<std::shared_ptr<Exp>> args = {$1};
+          std::vector<std::shared_ptr<Exp>> args = { $1 };
           $$ = std::make_shared<Exp>(ExpType::ARG_LIST, args);
         }
-    | ExpressionList "," Expression
+    | ExpressionList COMMA Expression
         {
           $1->callArguments.push_back($3);
           $$ = $1;
         }
     ;
+
+
+
