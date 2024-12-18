@@ -53,7 +53,7 @@ public:
         sp = stack.begin();
 
         // Optionally, disassemble bytecode for debugging
-        // _bytecodeGenerator->disassembleBytecode();
+         _bytecodeGenerator->disassembleBytecode();
 
         return evalExp();
     }

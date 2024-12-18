@@ -187,57 +187,55 @@ inline bool IS_CODE (const EvaluationValue& value) {
 }
 
 
+
 inline std::string evaValueToConstantString(const EvaluationValue &evaValue)
 {
     std::stringstream ss;
-    if (IS_NUMBER(evaValue))
-    {
-        ss << evaValue.number();
-    }
-    else if (IS_BOOL(evaValue))
-    {
-        ss << (evaValue.boolean() ? "true" : "false");
-    }
-    else if (IS_STRING(evaValue))
-    {
-        ss << '"' << AS_CPP_STRING(evaValue) << '"';
-    }
-    /*
-    else if (IS_CODE(evaValue))
-    {
-        auto code = AS_CODE(evaValue);
-        ss << "code: " << code << ": " << code->name << "/" << code->arity;
-    }
-    else if (IS_FUNCTION(evaValue))
-    {
-        auto fn = AS_FUNCTION(evaValue);
-        ss << fn->co->name << "/" << fn->co->arity;
-    }
-    else if (IS_NATIVE(evaValue))
-    {
-        auto fn = AS_NATIVE(evaValue);
-        ss << fn->name << "/" << fn->arity;
-    }
-    else if (IS_CELL(evaValue))
-    {
-        auto cell = AS_CELL(evaValue);
-        ss << "cell: " << evaValueToConstantString(cell->value);
-    }
-    else if (IS_CLASS(evaValue))
-    {
-        auto cls = AS_CLASS(evaValue);
-        ss << "class: " << cls->name;
-    }
-    else if (IS_INSTANCE(evaValue))
-    {
-        auto inst = AS_INSTANCE(evaValue);
-        ss << "instance: " << inst->cls->name;
-    }
-    */
-    else
-    {
-        throw std::runtime_error("valueToConstantString: unknown type " + std::to_string(static_cast<int>(evaValue.type)));
-
+    switch (evaValue.type) {
+        case EvaluationValueType::NUMBER:
+            ss << evaValue.number();
+            break;
+        case EvaluationValueType::BOOLEAN:
+            ss << (evaValue.boolean() ? "true" : "false");
+            break;
+        case EvaluationValueType::NIL:
+            ss << "nil";
+            break;
+        case EvaluationValueType::OBJECT:
+            if (evaValue.object() == nullptr) {
+                ss << "null_object";
+                break;
+            }
+            switch (evaValue.object()->type) {
+                case ObjectType::STRING: {
+                    StringObject* strObj = static_cast<StringObject*>(evaValue.object());
+                    ss << "\"" << strObj->string << "\"";
+                    break;
+                }
+                case ObjectType::ARRAY: {
+                    ArrayObject* arrObj = static_cast<ArrayObject*>(evaValue.object());
+                    ss << "[";
+                    for (size_t i = 0; i < arrObj->elements.size(); ++i) {
+                        ss << evaValueToConstantString(arrObj->elements[i]);
+                        if (i < arrObj->elements.size() - 1) {
+                            ss << ", ";
+                        }
+                    }
+                    ss << "]";
+                    break;
+                }
+                case ObjectType::CODE: {
+                    CodeObject* codeObj = static_cast<CodeObject*>(evaValue.object());
+                    ss << "<CodeObject: " << codeObj->name << ">";
+                    break;
+                }
+                default:
+                    ss << "<Unknown Object Type>";
+                    break;
+            }
+            break;
+        default:
+            throw std::runtime_error("evaValueToConstantString: Unknown EvaluationValueType " + std::to_string(static_cast<int>(evaValue.type)));
     }
     return ss.str();
 }

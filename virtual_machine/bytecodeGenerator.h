@@ -229,24 +229,20 @@ public :
                     throw std::runtime_error("Invalid assignment expression.");
                 }
 
-                if (exp.type == ExpType::ASSIGNMENT && exp.arrayValue != nullptr) {
-                    // This is an array element assignment
-                    // Generate code to:
-                    // 1. Push the array object
-                    // 2. Push the index
-                    // 3. Push the value
-                    // 4. Emit OP_ARRAY_SET
+                if (exp.arrayValue != nullptr) {
 
-                    // Generate code for the array object
-                    generate(exp.varName); // exp.varName is the array name (SYMBOL)
+                    // Array element assignment: arr[j] = arr[j + 1]
 
-                    // Generate code for the index expression
-                    generate(*exp.varValue); // exp.varValue is the index expression
+                    // Push array
+                    Exp arrayNameExp(exp.varName);
+                    generate(arrayNameExp);       // arr on stack
 
-                    // Generate code for the value to assign
-                    generate(*exp.arrayValue); // exp.arrayValue is the value expression
+                    // Push index
+                    generate(*exp.varValue);      // j on stack
 
-                    // Emit OP_ARRAY_SET
+                    // Push value
+                    generate(*exp.arrayValue);    // arr[j+1] on stack
+
                     emit(OP_ARRAY_SET);
                 }
 
@@ -455,29 +451,40 @@ public :
 
 
             case ExpType::ARRAY_LITERAL: {
-                // Emit OP_ARRAY to create a new array
+                // Emit OP_ARRAY to create a new empty array
                 emit(OP_ARRAY);
+                // Stack: [array]
 
                 // Initialize each element in the array
                 for (size_t i = 0; i < exp.callArguments.size(); ++i) {
-                    // Push the array object onto the stack (already done by OP_ARRAY)
+                    // Duplicate the top of the stack (the array) so we have two copies
+                    // Stack after OP_DUP: [array, array]
+                    emit(OP_DUP);
 
                     // Push the index
                     emit(OP_CONST);
-                    emit(numericConstIdx(static_cast<double>(i)));
+                    emit(numericConstIdx(static_cast<double>(i)));  // Stack: [array, array, i]
 
                     // Generate code for the element value
+                    // Stack after value: [array, array, i, value]
                     generate(*exp.callArguments[i]);
 
                     // Emit OP_ARRAY_SET to set arr[i] = value
+                    // OP_ARRAY_SET will pop value, i, and one array, leaving one array on the stack.
                     emit(OP_ARRAY_SET);
+                    // Stack after OP_ARRAY_SET: [array]
+
+                    // Next iteration starts again from [array]
                 }
+                // After all elements are set, one array remains on the stack
                 break;
             }
 
             case ExpType::ARRAY_ACCESS: {
                 // Push the array object
-                generate(exp.varName);      // arr
+                Exp arrayNameExp(exp.varName);
+
+                generate(arrayNameExp);      // arr
                 // Push the index
                 generate(*exp.varValue);     // i
                 // Emit OP_ARRAY_GET to retrieve arr[i]
