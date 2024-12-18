@@ -30,19 +30,21 @@ FetchContent_MakeAvailable(googletest)
 # It's better to separate headers and sources, but for simplicity, we'll list all files
 add_library(vm_lib STATIC
         virtual_machine/EvaluationValue.h
-        virtual_machine/vm.h
         virtual_machine/OpCode.h
         virtual_machine/parser.h
         virtual_machine/virtual_machine.cpp
         virtual_machine/bytecodeGenerator.h
-        virtual_machine/Global.h)
+        virtual_machine/Global.h
+        virtual_machine/CodeObject.h
+        virtual_machine/handlers.h
+        virtual_machine/handlers.cpp)
 
 # Optionally, specify include directories for the library (if not using include_directories globally)
 # target_include_directories(vm_lib PUBLIC ${PROJECT_SOURCE_DIR}/virtual_machine)
 
 # Create the main executable and link it against vm_lib
 add_executable(virtual_machine
-        virtual_machine/virtual_machine.cpp # Typically, only the main.cpp is added here
+        virtual_machine/virtual_machine.cpp
 )
 
 # Link the main executable with the library
