@@ -1,29 +1,39 @@
 #pragma once
+#include <unordered_map>
 #include <utility>
 #include <variant>
 
-#include "EvaluationValueType.h"
+enum class EvaluationValueType {
+    NUMBER,
+    BOOLEAN,
+    OBJECT,
+    NIL,
+};
 
-
-/*enum class ObjectType {
+enum class ObjectType {
     STRING,
     CODE,
     ARRAY,   // Added for arrays
-};*/
+};
 
-/*struct Object {
+struct Object {
     explicit Object (ObjectType type) {
         this->type = type;
     }
 
     ObjectType type;
-};*/
-
-struct Object;
-enum class EvaluationValueType;
+};
 
 struct EvaluationValue {
     EvaluationValueType type;
+    /*union
+    {
+    	bool boolean;
+        double number;
+        Object* object;
+    };*/
+
+
 
     std::variant<bool, double, Object*,std::nullptr_t> value;
 
@@ -40,17 +50,32 @@ struct EvaluationValue {
     }
 };
 
-/*struct StringObject : Object {
+struct StringObject : Object {
     explicit StringObject (const std::string& str) : Object(ObjectType::STRING) {
         this->string = str;
     }
 
     std::string string;
-};*/
+};
 
+struct CodeObject : public Object {
+    explicit CodeObject (std::string  name) : Object(ObjectType::CODE), name(std::move(name)) {
+    }
 
+    //name of unit (most of the cases for function name)
+    std::string name;
 
-/*struct ArrayObject : Object {
+    //constant pool
+    std::vector<EvaluationValue> constants;
+
+    // bytecode
+    std::vector<uint8_t> code;
+
+    // Mapping from slot indices to variable names
+    std::unordered_map<int, std::string> localNames;
+};
+
+struct ArrayObject : Object {
     ArrayObject() : Object(ObjectType::ARRAY) {}
     std::vector<EvaluationValue> elements; // Stores array elements
 };
@@ -66,7 +91,7 @@ inline EvaluationValue ALLOC_ARRAY() {
 // Helper functions to cast EvaluationValue to ArrayObject
 inline ArrayObject* AS_ARRAY(const EvaluationValue& value) {
     return static_cast<ArrayObject*>(value.object());
-}*/
+}
 
 
 
@@ -93,43 +118,43 @@ inline EvaluationValue NIL() {
 }
 
 
-/*inline EvaluationValue ALLOC_STRING (std::string value) {
+inline EvaluationValue ALLOC_STRING (std::string value) {
     EvaluationValue val;
     val.type = EvaluationValueType::OBJECT;
     val.value = static_cast<Object*>(new StringObject(value));
     return val;
-}*/
+}
 
 
-/*inline EvaluationValue ALLOC_CODE (std::string value) {
+inline EvaluationValue ALLOC_CODE (std::string value) {
     EvaluationValue val;
     val.type = EvaluationValueType::OBJECT;
     val.value = static_cast<Object*>(new CodeObject(value));
     return val;
-}*/
+}
 
-/*inline double AS_NUMBER (const EvaluationValue& value) {
+inline double AS_NUMBER (const EvaluationValue& value) {
     return value.number();
-}*/
+}
 
-/*inline StringObject* AS_STRING (const EvaluationValue& value) {
+inline StringObject* AS_STRING (const EvaluationValue& value) {
     return static_cast<StringObject*>(value.object());
-}*/
+}
 
-/*inline bool AS_BOOL (const EvaluationValue& value) {
+inline bool AS_BOOL (const EvaluationValue& value) {
     return value.boolean();
-}*/
+}
 
 
-/*inline std::string AS_CPP_STRING (const EvaluationValue& evaValue) {
+inline std::string AS_CPP_STRING (const EvaluationValue& evaValue) {
     return AS_STRING(evaValue)->string;
-}*/
+}
 
-/*inline CodeObject* AS_CODE (const EvaluationValue& evaValue) {
+inline CodeObject* AS_CODE (const EvaluationValue& evaValue) {
     return static_cast<CodeObject*>(evaValue.object());
-}*/
+}
 
-/*inline bool IS_NIL(const EvaluationValue& value) {
+inline bool IS_NIL(const EvaluationValue& value) {
     return value.type == EvaluationValueType::NIL;
 }
 inline bool IS_NUMBER (const EvaluationValue& value) {
@@ -138,32 +163,32 @@ inline bool IS_NUMBER (const EvaluationValue& value) {
 
 inline bool IS_BOOL (const EvaluationValue& value) {
     return value.type == EvaluationValueType::BOOLEAN;
-}*/
+}
 
-/*inline bool IS_OBJECT (const EvaluationValue& value) {
+inline bool IS_OBJECT (const EvaluationValue& value) {
     return value.type == EvaluationValueType::OBJECT;
 }
 
 inline bool IS_OBJECT_TYPE (const EvaluationValue& value, const ObjectType& objectType) {
     return IS_OBJECT(value) and value.object()->type == objectType;
-}*/
+}
 
 // Type checking
-/*inline bool IS_ARRAY(const EvaluationValue& value) {
+inline bool IS_ARRAY(const EvaluationValue& value) {
     return IS_OBJECT_TYPE(value, ObjectType::ARRAY);
-}*/
+}
 
-/*inline bool IS_STRING (const EvaluationValue& value) {
+inline bool IS_STRING (const EvaluationValue& value) {
     return IS_OBJECT_TYPE(value, ObjectType::STRING);
-}*/
+}
 
-/*inline bool IS_CODE (const EvaluationValue& value) {
+inline bool IS_CODE (const EvaluationValue& value) {
     return IS_OBJECT_TYPE(value, ObjectType::CODE);
-}*/
+}
 
 
 
-/*inline std::string evaValueToConstantString(const EvaluationValue &evaValue)
+inline std::string evaValueToConstantString(const EvaluationValue &evaValue)
 {
     std::stringstream ss;
     switch (evaValue.type) {
@@ -213,4 +238,4 @@ inline bool IS_OBJECT_TYPE (const EvaluationValue& value, const ObjectType& obje
             throw std::runtime_error("evaValueToConstantString: Unknown EvaluationValueType " + std::to_string(static_cast<int>(evaValue.type)));
     }
     return ss.str();
-}*/
+}

@@ -35,20 +35,14 @@ add_library(vm_lib STATIC
         virtual_machine/parser.h
         virtual_machine/virtual_machine.cpp
         virtual_machine/bytecodeGenerator.h
-        virtual_machine/Global.h
-        virtual_machine/DecodedInstruction.h)
+        virtual_machine/Global.h)
 
 # Optionally, specify include directories for the library (if not using include_directories globally)
 # target_include_directories(vm_lib PUBLIC ${PROJECT_SOURCE_DIR}/virtual_machine)
 
 # Create the main executable and link it against vm_lib
 add_executable(virtual_machine
-        virtual_machine/virtual_machine.cpp
-        virtual_machine/Object.h
-        virtual_machine/StringObject.h
-        virtual_machine/EvaluationValueType.h
-        virtual_machine/ArrayObject.h
-        virtual_machine/helpers.h # Typically, only the main.cpp is added here
+        virtual_machine/virtual_machine.cpp # Typically, only the main.cpp is added here
 )
 
 # Link the main executable with the library
@@ -59,14 +53,11 @@ target_link_libraries(virtual_machine PRIVATE vm_lib)
 set(TEST_SOURCES
         tests/tests.cpp
         virtual_machine/disassembler/Disassembler.h
-        virtual_machine/DecodedInstruction.h
-        virtual_machine/CodeObject.h
         # Add other test source files here
 )
 
 # Create the test executable and link it against Google Test and vm_lib
-add_executable(MyTests ${TEST_SOURCES}
-        virtual_machine/DecodedInstruction.h)
+add_executable(MyTests ${TEST_SOURCES})
 
 # Link the test executable with Google Test and vm_lib
 target_link_libraries(MyTests

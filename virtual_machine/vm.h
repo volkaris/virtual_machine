@@ -4,15 +4,13 @@
 #include <string>
 #include <memory>
 #include <array>
-
-#include "ArrayObject.h"
+#include "OpCode.h"
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "bytecodeGenerator.h"
 #include "Global.h"
 
 #define STACK_LIMIT 512
-
 
 struct CallFrame;
 class vm;
@@ -83,7 +81,6 @@ static InstructionHandler handlers[0xFF + 1] = {
     handleNil              // 0x20 OP_NIL
     // Make sure to fill in any missing handlers if needed
 };
-
 
 
 struct CallFrame {
