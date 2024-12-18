@@ -115,6 +115,8 @@ struct Exp {
 
     std::shared_ptr<Exp> returnValue;
 
+     std::shared_ptr<Exp> arrayValue;
+
     // Constructors
 
     Exp(ExpType type, const std::vector<std::string> &params)
@@ -164,6 +166,10 @@ struct Exp {
 
     Exp(ExpType type, std::shared_ptr<Exp> returnValue)
         : type(type), returnValue(returnValue) {}
+
+
+    Exp(ExpType type, const std::string &varName, std::shared_ptr<Exp> varValue, std::shared_ptr<Exp> arrayValue)
+            : type(type), varName(varName), varValue(varValue), arrayValue(arrayValue) {}
 
 };
 
@@ -328,9 +334,9 @@ Expression
 
 Assignment
     : SYMBOL ASSIGN Expression
-        { $$ = std::make_shared<Exp>(ExpType::ASSIGNMENT, $1, $3); }
-    | ArrayAccess ASSIGN Expression    /* Support assigning to array elements */
-        { $$ = std::make_shared<Exp>(ExpType::ASSIGNMENT, $1, $3); }
+           { $$ = std::make_shared<Exp>(ExpType::ASSIGNMENT, $1, $3, nullptr); }
+       | ArrayAccess ASSIGN Expression    /* Support assigning to array elements */
+           { $$ = std::make_shared<Exp>(ExpType::ASSIGNMENT, $1->varName, $1->varValue, $3); }
     ;
 
 LogicalOrExpression

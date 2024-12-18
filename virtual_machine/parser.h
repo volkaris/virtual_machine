@@ -112,6 +112,8 @@ struct Exp {
 
     std::shared_ptr<Exp> returnValue;
 
+     std::shared_ptr<Exp> arrayValue;
+
     // Constructors
 
     Exp(ExpType type, const std::vector<std::string> &params)
@@ -161,6 +163,10 @@ struct Exp {
 
     Exp(ExpType type, std::shared_ptr<Exp> returnValue)
         : type(type), returnValue(returnValue) {}
+
+
+    Exp(ExpType type, const std::string &varName, std::shared_ptr<Exp> varValue, std::shared_ptr<Exp> arrayValue)
+            : type(type), varName(varName), varValue(varValue), arrayValue(arrayValue) {}
 
 };
 
@@ -1310,7 +1316,7 @@ auto _3 = POP_V();
 parser.tokensStack.pop_back();
 auto _1 = POP_T();
 
-auto __ = std::make_shared<Exp>(ExpType::ASSIGNMENT, _1, _3);
+auto __ = std::make_shared<Exp>(ExpType::ASSIGNMENT, _1, _3, nullptr);
 
  // Semantic action epilogue.
 PUSH_VR();
@@ -1323,7 +1329,7 @@ auto _3 = POP_V();
 parser.tokensStack.pop_back();
 auto _1 = POP_V();
 
-auto __ = std::make_shared<Exp>(ExpType::ASSIGNMENT, _1, _3);
+auto __ = std::make_shared<Exp>(ExpType::ASSIGNMENT, _1->varName, _1->varValue, _3);
 
  // Semantic action epilogue.
 PUSH_VR();

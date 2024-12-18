@@ -224,28 +224,56 @@ public :
                 break;
             }
             case ExpType::ASSIGNMENT: {
-                generate(*exp.varValue);
 
-                int slot = -1;
-
-                // Look through scopes from innermost to outermost
-                for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
-                    auto &scope = *scopeIt;
-                    if (scope.find(exp.varName) != scope.end()) {
-                        slot = scope[exp.varName];
-                        emit(OP_SET_LOCAL);
-                        emit(slot);
-                        break;
-                    }
+                if (exp.varName.empty()) {
+                    throw std::runtime_error("Invalid assignment expression.");
                 }
 
-                if (slot == -1) {
-                    // Check global variables
-                    if (global->exists(exp.varName)) {
-                        emit(OP_SET_GLOBAL);
-                        emit(global->getGlobalIndex(exp.varName));
-                    } else {
-                        throw std::runtime_error("Undefined variable: " + exp.varName);
+                if (exp.type == ExpType::ASSIGNMENT && exp.arrayValue != nullptr) {
+                    // This is an array element assignment
+                    // Generate code to:
+                    // 1. Push the array object
+                    // 2. Push the index
+                    // 3. Push the value
+                    // 4. Emit OP_ARRAY_SET
+
+                    // Generate code for the array object
+                    generate(exp.varName); // exp.varName is the array name (SYMBOL)
+
+                    // Generate code for the index expression
+                    generate(*exp.varValue); // exp.varValue is the index expression
+
+                    // Generate code for the value to assign
+                    generate(*exp.arrayValue); // exp.arrayValue is the value expression
+
+                    // Emit OP_ARRAY_SET
+                    emit(OP_ARRAY_SET);
+                }
+
+                else {
+                    generate(*exp.varValue);
+
+                    int slot = -1;
+
+                    // Look through scopes from innermost to outermost
+                    for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
+                        auto &scope = *scopeIt;
+                        if (scope.find(exp.varName) != scope.end()) {
+                            slot = scope[exp.varName];
+                            emit(OP_SET_LOCAL);
+                            emit(slot);
+                            break;
+                        }
+                    }
+
+                    if (slot == -1) {
+                        // Check global variables
+                        if (global->exists(exp.varName)) {
+                            emit(OP_SET_GLOBAL);
+                            emit(global->getGlobalIndex(exp.varName));
+                        } else {
+                            throw std::runtime_error("Undefined variable: " + exp.varName);
+                        }
                     }
                 }
 
@@ -426,6 +454,36 @@ public :
             }
 
 
+            case ExpType::ARRAY_LITERAL: {
+                // Emit OP_ARRAY to create a new array
+                emit(OP_ARRAY);
+
+                // Initialize each element in the array
+                for (size_t i = 0; i < exp.callArguments.size(); ++i) {
+                    // Push the array object onto the stack (already done by OP_ARRAY)
+
+                    // Push the index
+                    emit(OP_CONST);
+                    emit(numericConstIdx(static_cast<double>(i)));
+
+                    // Generate code for the element value
+                    generate(*exp.callArguments[i]);
+
+                    // Emit OP_ARRAY_SET to set arr[i] = value
+                    emit(OP_ARRAY_SET);
+                }
+                break;
+            }
+
+            case ExpType::ARRAY_ACCESS: {
+                // Push the array object
+                generate(exp.varName);      // arr
+                // Push the index
+                generate(*exp.varValue);     // i
+                // Emit OP_ARRAY_GET to retrieve arr[i]
+                emit(OP_ARRAY_GET);
+                break;
+            }
 
 
         }
