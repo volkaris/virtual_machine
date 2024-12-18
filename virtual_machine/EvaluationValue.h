@@ -13,6 +13,7 @@ enum class EvaluationValueType {
 enum class ObjectType {
     STRING,
     CODE,
+    ARRAY,   // Added for arrays
 };
 
 struct Object {
@@ -73,6 +74,26 @@ struct CodeObject : public Object {
     // Mapping from slot indices to variable names
     std::unordered_map<int, std::string> localNames;
 };
+
+struct ArrayObject : Object {
+    ArrayObject() : Object(ObjectType::ARRAY) {}
+    std::vector<EvaluationValue> elements; // Stores array elements
+};
+
+// Allocation functions
+inline EvaluationValue ALLOC_ARRAY() {
+    EvaluationValue val;
+    val.type = EvaluationValueType::OBJECT;
+    val.value = static_cast<Object*>(new ArrayObject());
+    return val;
+}
+
+// Helper functions to cast EvaluationValue to ArrayObject
+inline ArrayObject* AS_ARRAY(const EvaluationValue& value) {
+    return static_cast<ArrayObject*>(value.object());
+}
+
+
 
 
 inline EvaluationValue NUMBER (double value) {
@@ -150,6 +171,11 @@ inline bool IS_OBJECT (const EvaluationValue& value) {
 
 inline bool IS_OBJECT_TYPE (const EvaluationValue& value, const ObjectType& objectType) {
     return IS_OBJECT(value) and value.object()->type == objectType;
+}
+
+// Type checking
+inline bool IS_ARRAY(const EvaluationValue& value) {
+    return IS_OBJECT_TYPE(value, ObjectType::ARRAY);
 }
 
 inline bool IS_STRING (const EvaluationValue& value) {

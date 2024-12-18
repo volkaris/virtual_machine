@@ -40,6 +40,7 @@ public:
     }
 
     EvaluationValue exec(const std::string &program) {
+
         std::shared_ptr<Exp> ast = _parser->parse(program);
         co = _bytecodeGenerator->compile(*ast);
 
@@ -305,6 +306,75 @@ public:
                     // Push the return value onto the previous frame's stack
                     push(returnValue);
 
+                    break;
+                }
+
+
+                case OP_ARRAY: {
+                    // Create a new array and push it onto the stack
+                    push(ALLOC_ARRAY());
+                    break;
+                }
+
+                case OP_ARRAY_GET: {
+                    // Pop the index and array from the stack
+                    EvaluationValue indexVal = pop();
+                    EvaluationValue arrayVal = pop();
+
+                    // Validate that the popped value is an array
+                    if (!IS_ARRAY(arrayVal)) {
+                        throw std::runtime_error("Attempting to index a non-array.");
+                    }
+
+                    ArrayObject* array = AS_ARRAY(arrayVal);
+
+                    // Ensure the index is a number
+                    if (!IS_NUMBER(indexVal)) {
+                        throw std::runtime_error("Array index must be a number.");
+                    }
+
+                    double indexDouble = AS_NUMBER(indexVal);
+                    size_t index = static_cast<size_t>(indexDouble);
+
+                    // Bounds checking
+                    if (index >= array->elements.size()) {
+                        throw std::runtime_error("Array index out of bounds.");
+                    }
+
+                    // Push the array element onto the stack
+                    push(array->elements[index]);
+                    break;
+                }
+
+                case OP_ARRAY_SET: {
+                    // Pop the value, index, and array from the stack
+                    EvaluationValue value = pop();
+                    EvaluationValue indexVal = pop();
+                    EvaluationValue arrayVal = pop();
+
+                    // Validate that the popped value is an array
+                    if (!IS_ARRAY(arrayVal)) {
+                        throw std::runtime_error("Attempting to index a non-array.");
+                    }
+
+                    ArrayObject* array = AS_ARRAY(arrayVal);
+
+                    // Ensure the index is a number
+                    if (!IS_NUMBER(indexVal)) {
+                        throw std::runtime_error("Array index must be a number.");
+                    }
+
+                    double indexDouble = AS_NUMBER(indexVal);
+                    size_t index = static_cast<size_t>(indexDouble);
+
+                    // Bounds checking and resizing if necessary
+                    if (index >= array->elements.size()) {
+                        // Resize the array to accommodate the new index
+                        array->elements.resize(index + 1, NIL());
+                    }
+
+                    // Assign the value to the specified index
+                    array->elements[index] = value;
                     break;
                 }
 

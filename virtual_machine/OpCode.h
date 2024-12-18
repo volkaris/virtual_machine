@@ -36,6 +36,10 @@ constexpr auto OP_NIL = 0x20;
 constexpr auto OP_CALL   = 0x19;
 constexpr auto OP_RETURN = 0x1A;
 
+constexpr auto OP_ARRAY = 0x1B;        // Create a new array
+constexpr auto OP_ARRAY_GET = 0x1C;    // Get array element
+constexpr auto OP_ARRAY_SET = 0x1D;    // Set array element
+
 
 inline std::string opcodeToString(uint8_t opcode) {
     switch (opcode) {
@@ -61,6 +65,10 @@ inline std::string opcodeToString(uint8_t opcode) {
         case OP_DUP: return "DUP";
         case OP_CALL:   return "CALL";
         case OP_RETURN: return "RETURN";
+        case OP_ARRAY: return "ARRAY";
+        case OP_ARRAY_GET: return "ARRAY_GET";
+        case OP_ARRAY_SET: return "ARRAY_SET";
+
 
         default:
             throw std::runtime_error("Unknown opcode: " + std::to_string(opcode));
