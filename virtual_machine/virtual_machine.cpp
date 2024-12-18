@@ -23,10 +23,23 @@ var i = 0;
     return arr;
 }
 
-var array = [5, 3, 8, 6, 2];
+ func fill(limit) {
+    var arr = [];
+    var k = 10;
+    var resIndex = 0;
+    while (resIndex < limit) {
+        arr[resIndex] = k;
+        resIndex = resIndex + 1;
+        k = k - 2;
+    }
+    return arr;
+}
+
+var array = fill(5);
+
 var size = 5;
 var sortedArray = bubbleSort(array, size);
-sortedArray;
+array;
 
 )");
 auto z=AS_ARRAY(result);
