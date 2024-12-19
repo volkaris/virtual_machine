@@ -1,0 +1,32 @@
+
+func sieveOfEratosthenes(n) {
+    // Инициализируем массив чисел от 0 до n, 
+    // предположим, что все числа - простые (true), кроме 0 и 1
+    var sieve = [];
+    var i = 0;
+    while (i <= n) {
+        sieve[i] = true;
+        i = i + 1;
+    }
+    sieve[0] = false;
+    sieve[1] = false;
+
+    var p = 2;
+    while (p * p <= n) {
+        if (sieve[p] == true) {
+            var j = p * p;
+            while (j <= n) {
+                sieve[j] = false;
+                j = j + p;
+            }
+        }
+        p = p + 1;
+    }
+    return sieve;
+}
+
+
+
+var primes = sieveOfEratosthenes(30);
+
+print(primes)

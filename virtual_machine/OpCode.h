@@ -36,6 +36,7 @@ constexpr auto OP_RETURN = 0x13;
 constexpr auto OP_ARRAY = 0x14;
 constexpr auto OP_ARRAY_GET = 0x15;
 constexpr auto OP_ARRAY_SET = 0x16;
+constexpr auto OP_PRINT = 0x17;
 
 inline std::string opcodeToString(uint8_t opcode) {
     switch (opcode) {
@@ -62,6 +63,7 @@ inline std::string opcodeToString(uint8_t opcode) {
         case OP_ARRAY: return "ARRAY";
         case OP_ARRAY_GET: return "ARRAY_GET";
         case OP_ARRAY_SET: return "ARRAY_SET";
+        case OP_PRINT : return "OP_PRINT";
         default:
             throw std::runtime_error("Неизвестный байткод " + std::to_string(opcode));
     }

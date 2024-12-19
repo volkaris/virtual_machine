@@ -448,6 +448,18 @@ public :
                 emit(OP_ARRAY_GET);
                 break;
             }
+
+            case ExpType::PRINT_STATEMENT: {
+
+                generate(*exp.varValue);
+
+
+                emit(OP_PRINT);
+                break;
+            }
+
+
+
         }
     }
 
@@ -579,7 +591,7 @@ private:
     }
 
     void eliminateRedundantLoadsAndStores(CodeObject* co) {
-        // Простой пример удаления избыточных загрузок/сохранений
+        // удаление избыточных загрузок/сохранений
         std::vector<uint8_t>& code = co->code;
         bool changed = true;
 

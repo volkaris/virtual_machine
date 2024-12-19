@@ -7,6 +7,8 @@
 
 \s+                %empty
 
+"print"                 PRINT
+
 "return"                 RETURN
 "func"                   FUNC
 "if"                     IF
@@ -74,8 +76,9 @@ enum class ExpType {
     PARAM_LIST,
     ARG_LIST,
     RETURN_STATEMENT,
-    ARRAY_LITERAL,    /* Added for arrays */
-    ARRAY_ACCESS      /* Added for arrays */
+    ARRAY_LITERAL,
+    ARRAY_ACCESS  ,
+     PRINT_STATEMENT
 };
 
 struct Exp {
@@ -164,8 +167,23 @@ struct Exp {
     Exp(ExpType expType, std::shared_ptr<Exp> forInit, std::shared_ptr<Exp> forCondition, std::shared_ptr<Exp> forUpdate, std::shared_ptr<Exp> forBody)
         : type(expType), forInit(forInit), forCondition(forCondition), forUpdate(forUpdate), forBody(forBody) {}
 
-    Exp(ExpType type, std::shared_ptr<Exp> returnValue)
-        : type(type), returnValue(returnValue) {}
+
+Exp(ExpType type, std::shared_ptr<Exp> singleValue)
+    : type(type)
+{
+    switch(type) {
+        case ExpType::RETURN_STATEMENT:
+            returnValue = singleValue;
+            break;
+        case ExpType::PRINT_STATEMENT:
+            varValue = singleValue;
+            break;
+
+        default:
+            varValue = singleValue;
+            break;
+    }
+}
 
 
     Exp(ExpType type, const std::string &varName, std::shared_ptr<Exp> varValue, std::shared_ptr<Exp> arrayValue)
@@ -192,9 +210,9 @@ using Value = std::shared_ptr<Exp>;
 %token R_BRACE
 %token L_PAREN
 %token R_PAREN
-%token L_BRACKET      /* Added for arrays */
-%token R_BRACKET      /* Added for arrays */
-%token COMMA          /* Added for arrays */
+%token L_BRACKET
+%token R_BRACKET
+%token COMMA
 
 %token NUMBER
 %token STRING
@@ -216,6 +234,10 @@ using Value = std::shared_ptr<Exp>;
 %token LOGICAL_OR
 %token LOGICAL_NOT
 
+
+%token PRINT
+
+
 %%
 
 Program
@@ -234,6 +256,7 @@ Statement
     : MatchedStatement
     | UnmatchedStatement
     | ReturnStatement
+    | PrintStatement
     ;
 
 MatchedStatement
@@ -247,6 +270,11 @@ MatchedStatement
 UnmatchedStatement
     : IfWithoutElse
     ;
+
+    PrintStatement
+        : PRINT  L_PAREN Expression R_PAREN SEMICOLON
+            { $$ = std::make_shared<Exp>(ExpType::PRINT_STATEMENT, $3); }
+        ;
 
 IfStatement
     : IF L_PAREN Expression R_PAREN MatchedStatement ELSE MatchedStatement

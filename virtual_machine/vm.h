@@ -41,7 +41,7 @@ static void handleArray(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleArrayGet(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleArraySet(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleNil(vm* machine, CallFrame &frame, uint8_t *&ip);
-
+static void handlePrint(vm* machine, CallFrame &frame, uint8_t *&ip);
 
 static InstructionHandler handlers[0xFF + 1] = {
     handleHalt,
@@ -67,6 +67,7 @@ static InstructionHandler handlers[0xFF + 1] = {
     handleArray,
     handleArrayGet,
     handleArraySet,
+    handlePrint
 };
 
 struct CallFrame {
@@ -96,6 +97,7 @@ public:
 
     EvaluationValue exec(const std::string &program) {
         std::shared_ptr<Exp> ast = _parser->parse(program);
+
         co = _bytecodeGenerator->compile(*ast);
 
         // Инициализация главного вызова (main)
@@ -229,8 +231,14 @@ static bool handlersInitialized = [](){
 
 
 static void handleHalt(vm* machine, CallFrame &frame, uint8_t *&ip) {
-    // Завершение выполнения: вернуть верх стека или NIL
-    EvaluationValue result = IS_NIL(machine->peek()) ? NIL() : machine->pop();
+    EvaluationValue result = NIL();
+
+    // Если стек не пуст, взять верхнее значение, иначе оставить NIL.
+    if (machine->sp != machine->stack.begin()) {
+        // В стеке есть хотя бы один элемент
+        result = machine->pop();
+    }
+
     machine->callStack.clear();
     machine->push(result);
 }
@@ -467,4 +475,11 @@ static void handleArraySet(vm* machine, CallFrame &frame, uint8_t *&ip) {
 
 static void handleNil(vm* machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(NIL());
+}
+static void handlePrint(vm* machine, CallFrame &frame, uint8_t *&ip) {
+
+    EvaluationValue val = machine->peek();
+
+    std::string output = evaluationValueToConstantString(val);
+    std::cout << output << std::endl;
 }

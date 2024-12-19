@@ -1,49 +1,76 @@
+#include <fstream>
 #include <iostream>
 #include "vm.h"
 using namespace std;
+
 int main() {
-    vm vm;
+
+
+    /*setlocale(LC_ALL, "Russian");
+
+    std::string filePath;
+
+    cin >> filePath;
+
+    // Путь к файлу с исходным кодом
+
+
+    // Открываем файл и читаем его содержимое
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        std::cerr << "Could not open the file: " << filePath << std::endl;
+        return 1;
+    }
+
+    // Считываем весь файл в строку
+    std::string code((std::istreambuf_iterator(file)),
+                     std::istreambuf_iterator<char>());
+
+    file.close();
+
+    // Создаём виртуальную машину
+    vm machine;
+    // Выполняем считанный код
+    machine.exec(code);*/
+
+
+   vm vm;
     auto result = vm.exec(R"(
 
-func bubbleSort(arr, n) {
 
-var i = 0;
-    while (i < n) {
-        var j = 0;
-        while (j < n - i - 1) {
-            if (arr[j] > arr[j + 1]) {
-                var temp = arr[j];
-                arr[j] = arr[j + 1];
-                arr[j + 1] = temp;
-            }
-            j = j + 1;
-        }
+func sieveOfEratosthenes(n) {
+    // Инициализируем массив чисел от 0 до n,
+    // предположим, что все числа - простые (true), кроме 0 и 1
+    var sieve = [];
+    var i = 0;
+    while (i <= n) {
+        sieve[i] = true;
         i = i + 1;
     }
-    return arr;
-}
+    sieve[0] = false;
+    sieve[1] = false;
 
- func fill(limit) {
-    var arr = [];
-    var k = 10;
-    var resIndex = 0;
-    while (resIndex < limit) {
-        arr[resIndex] = k;
-        resIndex = resIndex + 1;
-        k = k - 2;
+    var p = 2;
+    while (p * p <= n) {
+        if (sieve[p] == true) {
+            var j = p * p;
+            while (j <= n) {
+                sieve[j] = false;
+                j = j + p;
+            }
+        }
+        p = p + 1;
     }
-    return arr;
+    return sieve;
 }
 
-var array = fill(5);
 
-var size = 5;
-var sortedArray = bubbleSort(array, size);
-array;
+
+var primes = sieveOfEratosthenes(30);
+
+print(primes);
 
 )");
-auto z=AS_ARRAY(result);
 
     int x=10;
-    result.type;
 }
