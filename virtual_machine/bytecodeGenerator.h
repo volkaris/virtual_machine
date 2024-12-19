@@ -1,17 +1,11 @@
-//
-// Created by Ilya on 06.10.2024.
-//
 #pragma once
 
-
 #include <unordered_map>
-
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "OpCode.h"
 #include "Global.h"
 #include "disassembler/Disassembler.h"
-
 
 class bytecodeGenerator {
 public :
@@ -22,15 +16,17 @@ public :
     CodeObject *compile(const Exp &exp) {
         co = AS_CODE(ALLOC_CODE("main"));
 
-        //todo do i actually need it?
-        /*locals.clear();*/
-        localCount = 0;
 
+        localCount = 0;
 
         generate(exp);
 
-        //forcefully stop the program
+
         emit(OP_HALT);
+
+
+        optimizeBytecode(co);
+
         return co;
     }
 
@@ -49,6 +45,7 @@ public :
             }
 
             case ExpType::SYMBOL: {
+
                 if (exp.string == "true" || exp.string == "false") {
                     emit(OP_CONST);
                     emit(booleanConstIdx(exp.string == "true"));
@@ -57,7 +54,7 @@ public :
 
                 int slot = -1;
 
-                // Look through scopes from innermost to outermost
+                // Поиск переменной во внутренних областях видимости (от внутренней к внешней)
                 for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
                     auto &scope = *scopeIt;
                     if (scope.find(exp.string) != scope.end()) {
@@ -69,7 +66,6 @@ public :
                 }
 
                 if (slot == -1) {
-                    // Check global variables
                     if (global->exists(exp.string)) {
                         emit(OP_GET_GLOBAL);
                         emit(global->getGlobalIndex(exp.string));
@@ -87,44 +83,43 @@ public :
                 if (exp.unaryOp == "!") {
                     emit(OP_LOGICAL_NOT);
                 } else {
-                    //todo add support for unary minus and plus operators (++x, --x)
-                    throw std::runtime_error("Unknown operator in unary expression.");
+                    throw std::runtime_error("Неизвестный оператор в бинарном выражении");
                 }
                 break;
             }
 
-
             case ExpType::BINARY_EXP: {
-
+                // Логические операции && и || с коротким замыканием
                 if (exp.op == "&&") {
-                    // Short-circuit evaluation for '&&'        //Short-circuit evaluation is when the second argument is not evaluated if the first argument is false.
-                    generate(*exp.left);                        //for binary && ur wont evaluate the right  if the left is false
-
-                    emit(OP_DUP); // Duplicate the value for checking
-                    emit(OP_JUMP_IF_FALSE_OR_POP);
-                    size_t jumpAddr = co->code.size();
-                    emit16(0); // Placeholder for jump address
-
-                    generate(*exp.right);
-
-                    // Backpatch the jump address
-                    size_t afterRight = co->code.size();
-                    patchAddress(jumpAddr, afterRight);
-                } else if (exp.op == "||") {                //for || ur wont evaluate the right  if the left is true
-                    // Short-circuit evaluation for '||'
+                    // Для &&: если левая часть ложна, правая не вычисляется
                     generate(*exp.left);
 
-                    emit(OP_DUP); // Duplicate the value for checking
-                    emit(OP_JUMP_IF_TRUE_OR_POP);
+                    emit(OP_DUP);
+                    emit(OP_JUMP_IF_FALSE_OR_POP);
                     size_t jumpAddr = co->code.size();
-                    emit16(0); // Placeholder for jump address
+                    emit16(0); // Заглушка адреса
 
                     generate(*exp.right);
 
-                    // Backpatch the jump address
+
+                    size_t afterRight = co->code.size();
+                    patchAddress(jumpAddr, afterRight);
+                } else if (exp.op == "||") {
+                    // Для ||: если левая часть истинна, правая не вычисляется
+                    generate(*exp.left);
+
+                    emit(OP_DUP);
+                    emit(OP_JUMP_IF_TRUE_OR_POP);
+                    size_t jumpAddr = co->code.size();
+                    emit16(0);
+
+                    generate(*exp.right);
+
+
                     size_t afterRight = co->code.size();
                     patchAddress(jumpAddr, afterRight);
                 } else {
+
                     generate(*exp.left);
                     generate(*exp.right);
 
@@ -140,60 +135,61 @@ public :
                         emit(OP_COMPARE);
                         emit(compareOperator[exp.op]);
                     } else {
-                        throw std::runtime_error("Unknown operator in binary expression.");
+                        throw std::runtime_error("Неизвестный оператор в бинарном выражении");
                     }
                 }
                 break;
             }
+
             case ExpType::IF_EXP: {
-                // Generate code for condition
+
                 generate(*exp.condition);
 
-                // Emit OP_JUMP_IF_FALSE with placeholder address
+
                 emit(OP_JUMP_IF_FALSE);
                 size_t jumpIfFalseAddr = co->code.size();
-
                 emit16(0);
 
                 generate(*exp.thenBranch);
 
                 if (exp.elseBranch != nullptr) {
-                    // Emit OP_JUMP to skip elseBranch
+                    // Если есть else-ветка, вставляем OP_JUMP для пропуска else при истинном условии
                     emit(OP_JUMP);
                     size_t jumpAddr = co->code.size();
                     emit16(0);
 
-                    // Backpatch the jumpIfFalse address to point to elseBranch
+                    // Обратная замена адреса на начало else
                     uint16_t elseBranchAddr = co->code.size();
                     patchAddress(jumpIfFalseAddr, elseBranchAddr);
 
-                    // Generate code for elseBranch
                     generate(*exp.elseBranch);
 
-                    // Backpatch the jump address to point after elseBranch
+                    // Обратная замена адреса после else
                     uint16_t afterElseAddr = co->code.size();
                     patchAddress(jumpAddr, afterElseAddr);
                 } else {
-                    // Emit OP_JUMP to skip over OP_NIL when condition is true
+                    // Если нет else-ветки, пропускаем место для nil
                     emit(OP_JUMP);
                     size_t jumpOverNilAddr = co->code.size();
                     emit16(0);
 
-                    // Backpatch the jumpIfFalse address to point to OP_NIL
+                    // Обратная замена адреса на место вставки NIL
                     uint16_t nilAddr = co->code.size();
                     patchAddress(jumpIfFalseAddr, nilAddr);
 
-                    // Emit OP_NIL (executed when condition is false)
+                    // Вставка NIL при ложном условии
                     emit(OP_NIL);
 
-                    // Backpatch the jump over OP_NIL to point after OP_NIL
+                    // Обратная замена адреса прыжка, чтобы пропустить NIL при истинном условии
                     uint16_t afterNilAddr = co->code.size();
                     patchAddress(jumpOverNilAddr, afterNilAddr);
                 }
 
                 break;
             }
+
             case ExpType::VAR_DECLARATION: {
+
                 generate(*exp.varValue);
 
                 auto &currentScope = scopeStack.back();
@@ -203,11 +199,8 @@ public :
                 }
 
                 currentScope[exp.varName] = localCount;
-
-                co->localNames[localCount] = exp.varName; // Store the variable name
-
+                co->localNames[localCount] = exp.varName;
                 localCount++;
-
 
                 emit(OP_SET_LOCAL);
                 emit(currentScope[exp.varName]);
@@ -215,43 +208,34 @@ public :
             }
 
             case ExpType::BLOCK: {
+
                 scopeStack.emplace_back();
 
                 for (const auto &stmt: exp.statements) {
                     generate(*stmt);
                 }
+
+
                 scopeStack.pop_back();
                 break;
             }
+
             case ExpType::ASSIGNMENT: {
 
-                if (exp.varName.empty()) {
-                    throw std::runtime_error("Invalid assignment expression.");
-                }
-
                 if (exp.arrayValue != nullptr) {
-
-                    // Array element assignment: arr[j] = arr[j + 1]
-
-                    // Push array
+                    // Присваивание элементу массива: arr[j] = arr[j+1]
                     Exp arrayNameExp(exp.varName);
-                    generate(arrayNameExp);       // arr on stack
+                    generate(arrayNameExp);
 
-                    // Push index
-                    generate(*exp.varValue);      // j on stack
-
-                    // Push value
-                    generate(*exp.arrayValue);    // arr[j+1] on stack
+                    generate(*exp.varValue);
+                    generate(*exp.arrayValue);
 
                     emit(OP_ARRAY_SET);
-                }
-
-                else {
+                } else {
                     generate(*exp.varValue);
 
                     int slot = -1;
-
-                    // Look through scopes from innermost to outermost
+                    // Поиск переменной в областях видимости
                     for (auto scopeIt = scopeStack.rbegin(); scopeIt != scopeStack.rend(); ++scopeIt) {
                         auto &scope = *scopeIt;
                         if (scope.find(exp.varName) != scope.end()) {
@@ -263,12 +247,12 @@ public :
                     }
 
                     if (slot == -1) {
-                        // Check global variables
+                        // Проверка глобальных
                         if (global->exists(exp.varName)) {
                             emit(OP_SET_GLOBAL);
                             emit(global->getGlobalIndex(exp.varName));
                         } else {
-                            throw std::runtime_error("Undefined variable: " + exp.varName);
+                            throw std::runtime_error("Неизвестная переменная " + exp.varName);
                         }
                     }
                 }
@@ -277,131 +261,125 @@ public :
             }
 
             case ExpType::WHILE_EXP : {
-
                 size_t loopStart = co->code.size();
 
-                // Generate code for condition
+
                 generate(*exp.condition);
 
-                // Emit OP_JUMP_IF_FALSE with placeholder address
+                // Вставка OP_JUMP_IF_FALSE для выхода из цикла
                 emit(OP_JUMP_IF_FALSE);
                 size_t exitJumpAddr = co->code.size();
-                emit16(0); // Placeholder for exit jump
+                emit16(0);
 
-                // Generate code for loop body
+
                 generate(*exp.whileBody);
 
-                // Emit OP_JUMP to loop start
+                // Прыжок в начало цикла
                 emit(OP_JUMP);
-                emit16(loopStart);
+                emit16((uint16_t)loopStart);
 
-                // Backpatch the exit jump address to point to the code after the loop
+                // Обратная замена адреса выхода из цикла
                 size_t loopEnd = co->code.size();
                 patchAddress(exitJumpAddr, loopEnd);
 
                 break;
             }
-            case  ExpType::FOR_EXP : {
-                // Generate initialization (if any)
+
+            case ExpType::FOR_EXP : {
+                // Инициализация (если есть)
                 if (exp.forInit != nullptr) {
                     generate(*exp.forInit);
                 }
 
                 size_t loopStart = co->code.size();
 
-                // Generate condition (if any)
+                // Условие (если есть)
                 if (exp.forCondition != nullptr) {
                     generate(*exp.forCondition);
 
-                    // Emit OP_JUMP_IF_FALSE with placeholder address
+                    // Если условие ложно - выход
                     emit(OP_JUMP_IF_FALSE);
                     size_t exitJumpAddr = co->code.size();
-                    emit16(0); // Placeholder for exit jump
+                    emit16(0);
 
-                    // Generate loop body
+                    // Тело цикла
                     generate(*exp.forBody);
 
-                    // Generate update expression (if any)
+                    // Обновление (если есть)
                     if (exp.forUpdate != nullptr) {
                         generate(*exp.forUpdate);
                     }
 
-                    // Emit OP_JUMP to loop start
+                    // Прыжок в начало
                     emit(OP_JUMP);
-                    emit16(loopStart);
+                    emit16((uint16_t)loopStart);
 
-                    // Backpatch the exit jump address to point to the code after the loop
+                    // Обратная замена адреса выхода
                     size_t loopEnd = co->code.size();
                     patchAddress(exitJumpAddr, loopEnd);
                 } else {
-                    // Infinite loop (condition is empty)
-                    // Emit loop body
+                    // Бесконечный цикл (нет условия)
                     generate(*exp.forBody);
 
-                    // Generate update expression (if any)
                     if (exp.forUpdate != nullptr) {
                         generate(*exp.forUpdate);
                     }
 
-                    // Emit OP_JUMP to loop start
                     emit(OP_JUMP);
-                    emit16(loopStart);
+                    emit16(static_cast<uint16_t>(loopStart));
                 }
                 break;
             }
 
             case ExpType::FUNCTION_DECLARATION: {
-                // Extract function details
+
+                // Создание нового CodeObject для функции
                 std::string functionName = exp.funcName;
                 std::vector<std::string> params = exp.funcParams;
                 std::shared_ptr<Exp> body = exp.funcBody;
 
-                // Create a new CodeObject for the function
                 CodeObject *functionCo = AS_CODE(ALLOC_CODE(functionName));
 
-                // Add the compiled functionCo to the constants of the main CodeObject
+
                 size_t functionConstIdx = co->constants.size();
-                co->constants.emplace_back(ALLOC_CODE_OBJECT(functionCo)); // Correctly store the compiled function object
+                co->constants.emplace_back(ALLOC_CODE_OBJECT(functionCo));
 
-                // Emit OP_CONST with the function's constant index
+                // Вставка OP_CONST с индексом функции
                 emit(OP_CONST);
-                emit(functionConstIdx);
+                emit((uint8_t)functionConstIdx);
 
-                // Define the function in the global variables
+
                 if (!global->exists(functionName)) {
                     global->define(functionName);
                 }
                 int globalIdx = global->getGlobalIndex(functionName);
 
-                // Emit OP_SET_GLOBAL to assign the function to its name
+                // OP_SET_GLOBAL для присвоения имени функции
                 emit(OP_SET_GLOBAL);
-                emit(globalIdx);
+                emit((uint8_t)globalIdx);
 
-                // Now switch to the function's CodeObject to generate the body
-                // Save the current CodeObject
+                // Переключение на functionCo
                 CodeObject *previousCo = co;
-
-                // Switch to the function's CodeObject
                 co = functionCo;
 
-                // Initialize a new scope for the function
+                // Новая область видимости для функции
                 scopeStack.emplace_back();
                 localCount = 0;
 
-                // Assign parameters to local variables
+                // Параметры как локальные переменные
                 for (const auto& param : params) {
                     scopeStack.back()[param] = localCount;
                     co->localNames[localCount] = param;
                     localCount++;
                 }
 
-                // Generate bytecode for the function body
+                // Генерация тела функции
                 generate(*body);
 
-                // Ensure the function ends with OP_RETURN
+                // Убедиться, что функция заканчивается return
                 emit(OP_RETURN);
 
-                // Restore the previous CodeObject and scope
+                // Восстановление предыдущего CodeObject и области
                 co = previousCo;
                 scopeStack.pop_back();
 
@@ -409,117 +387,87 @@ public :
             }
 
             case ExpType::FUNCTION_CALL: {
-                // Extract the function name and arguments
-                std::string functionName = exp.funcName; // Assuming 'string' holds the function name
 
-                // Get the function's index in global variables
+                std::string functionName = exp.funcName;
                 int functionIdx = global->getGlobalIndex(functionName);
                 if (functionIdx == -1) {
                     throw std::runtime_error("Undefined function: " + functionName);
                 }
 
-                // Emit OP_GET_GLOBAL to retrieve the function object
+                // Загрузка функции
                 emit(OP_GET_GLOBAL);
-                emit(functionIdx);
+                emit((uint8_t)functionIdx);
 
-                // Generate bytecode for each argument
+                // Генерация аргументов
                 for (const auto& arg : exp.callArguments) {
                     generate(*arg);
                 }
 
-                // Emit OP_CALL with the number of arguments
+
                 emit(OP_CALL);
-                emit(static_cast<uint8_t>(exp.callArguments.size()));
+                emit((uint8_t)exp.callArguments.size());
 
                 break;
             }
 
             case ExpType::RETURN_STATEMENT: {
                 if (exp.returnValue != nullptr) {
-                    // Generate bytecode for the return expression
                     generate(*exp.returnValue);
                 } else {
-                    // If no return value, push NIL
+                    // Если нет значения, вернуть NIL
                     emit(OP_NIL);
                 }
 
-                // Emit OP_RETURN to exit the function
                 emit(OP_RETURN);
-
                 break;
             }
 
-
             case ExpType::ARRAY_LITERAL: {
-                // Emit OP_ARRAY to create a new empty array
-                emit(OP_ARRAY);
-                // Stack: [array]
 
-                // Initialize each element in the array
+                emit(OP_ARRAY);
+
+
                 for (size_t i = 0; i < exp.callArguments.size(); ++i) {
-                    // Duplicate the top of the stack (the array) so we have two copies
-                    // Stack after OP_DUP: [array, array]
                     emit(OP_DUP);
 
-                    // Push the index
                     emit(OP_CONST);
-                    emit(numericConstIdx(static_cast<double>(i)));  // Stack: [array, array, i]
+                    emit(numericConstIdx((double)i));
 
-                    // Generate code for the element value
-                    // Stack after value: [array, array, i, value]
                     generate(*exp.callArguments[i]);
 
-                    // Emit OP_ARRAY_SET to set arr[i] = value
-                    // OP_ARRAY_SET will pop value, i, and one array, leaving one array on the stack.
                     emit(OP_ARRAY_SET);
-                    // Stack after OP_ARRAY_SET: [array]
-
-                    // Next iteration starts again from [array]
                 }
-                // After all elements are set, one array remains on the stack
                 break;
             }
 
             case ExpType::ARRAY_ACCESS: {
-                // Push the array object
+                // Доступ к элементу массива: arr[i]
                 Exp arrayNameExp(exp.varName);
-
-                generate(arrayNameExp);      // arr
-                // Push the index
-                generate(*exp.varValue);     // i
-                // Emit OP_ARRAY_GET to retrieve arr[i]
+                generate(arrayNameExp);
+                generate(*exp.varValue);
                 emit(OP_ARRAY_GET);
                 break;
             }
-
-
         }
     }
 
     void disassembleBytecode() { disassembler->disassemble(co); }
 
 private:
-    //Global object
     std::shared_ptr<Global> global;
 
     std::unique_ptr<Disassembler> disassembler;
 
-    // compiling code object
     CodeObject *co;
 
     std::vector<std::unordered_map<std::string, int> > scopeStack;
-    /*std::unordered_map<std::string, int> locals;*/
     int localCount = 0;
 
     size_t getOffset() { return co->code.size(); }
 
     size_t numericConstIdx(double value) {
-        for (auto i = 0; i < co->constants.size(); ++i) {
-            if (!IS_NUMBER(co->constants[i])) {
-                continue;
-            }
-
-            if (AS_NUMBER(co->constants[i]) == value) {
+        for (size_t i = 0; i < co->constants.size(); ++i) {
+            if (IS_NUMBER(co->constants[i]) && AS_NUMBER(co->constants[i]) == value) {
                 return i;
             }
         }
@@ -528,12 +476,8 @@ private:
     }
 
     size_t booleanConstIdx(bool value) {
-        for (auto i = 0; i < co->constants.size(); ++i) {
-            if (!IS_BOOL(co->constants[i])) {
-                continue;
-            }
-
-            if (AS_BOOL(co->constants[i]) == value) {
+        for (size_t i = 0; i < co->constants.size(); ++i) {
+            if (IS_BOOL(co->constants[i]) && AS_BOOL(co->constants[i]) == value) {
                 return i;
             }
         }
@@ -542,12 +486,8 @@ private:
     }
 
     size_t stringConstIdx(const std::string &value) {
-        for (auto i = 0; i < co->constants.size(); ++i) {
-            if (!IS_STRING(co->constants[i])) {
-                continue;
-            }
-
-            if (AS_CPP_STRING(co->constants[i]) == value) {
+        for (size_t i = 0; i < co->constants.size(); ++i) {
+            if (IS_STRING(co->constants[i]) && AS_CPP_STRING(co->constants[i]) == value) {
                 return i;
             }
         }
@@ -560,20 +500,115 @@ private:
     }
 
     void emit16(uint16_t value) {
-        emit((value >> 8) & 0xFF);
-        emit(value & 0xFF);
+        emit((uint8_t)((value >> 8) & 0xFF));
+        emit((uint8_t)(value & 0xFF));
     }
 
     void patchAddress(size_t addrPos, uint16_t value) {
-        co->code[addrPos] = (value >> 8) & 0xFF;
-        co->code[addrPos + 1] = value & 0xFF;
+        co->code[addrPos] = (uint8_t)((value >> 8) & 0xFF);
+        co->code[addrPos + 1] = (uint8_t)(value & 0xFF);
     }
 
     inline EvaluationValue ALLOC_CODE_OBJECT(CodeObject* codeObject) {
         EvaluationValue val;
         val.type = EvaluationValueType::OBJECT;
-        val.value = static_cast<Object*>(codeObject);
+        val.value = (Object*)codeObject;
         return val;
+    }
+
+    void optimizeBytecode(CodeObject *co) {
+
+        /*std::cout << "До оптимизации\n";
+        disassembler->disassemble(co);*/
+
+        // Константная свёртка
+        foldConstants(co);
+
+
+        // Устранение избыточных загрузок/сохранений
+        eliminateRedundantLoadsAndStores(co);
+
+
+        /*std::cout << "После оптимизации\n";
+        disassembler->disassemble(co);*/
+    }
+
+    void foldConstants(CodeObject* co) {
+        //  если видим OP_CONST c1; OP_CONST c2; OP_ADD,
+        // и оба c1 и c2 - числа, можно свести к одному числу
+
+        std::vector<uint8_t>& code = co->code;
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (size_t i = 0; i + 2 < code.size(); i++) {
+                if (code[i] == OP_CONST && code[i+2] == OP_CONST && i+4 < code.size()) {
+                    uint8_t cIndex1 = code[i+1];
+                    uint8_t cIndex2 = code[i+3];
+
+                    if ((code[i+4] == OP_ADD || code[i+4] == OP_SUB || code[i+4] == OP_MUL || code[i+4] == OP_DIV)
+                        && IS_NUMBER(co->constants[cIndex1]) && IS_NUMBER(co->constants[cIndex2])) {
+
+                        double leftVal = AS_NUMBER(co->constants[cIndex1]);
+                        double rightVal = AS_NUMBER(co->constants[cIndex2]);
+                        double result;
+                        switch (code[i+4]) {
+                            case OP_ADD: result = leftVal + rightVal; break;
+                            case OP_SUB: result = leftVal - rightVal; break;
+                            case OP_MUL: result = leftVal * rightVal; break;
+                            case OP_DIV:
+                                if (rightVal == 0) continue;
+                                result = leftVal / rightVal;
+                                break;
+                            default: continue;
+                        }
+
+                        size_t newIndex = numericConstIdxInFunction(co, result);
+
+                        // Заменяем последовательность на один OP_CONST
+                        code[i] = OP_CONST;
+                        code[i+1] = (uint8_t)newIndex;
+                        code.erase(code.begin() + i + 2, code.begin() + i + 5);
+
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    void eliminateRedundantLoadsAndStores(CodeObject* co) {
+        // Простой пример удаления избыточных загрузок/сохранений
+        std::vector<uint8_t>& code = co->code;
+        bool changed = true;
+
+        while (changed) {
+            changed = false;
+            for (size_t i = 0; i + 2 < code.size(); i++) {
+                if (code[i] == OP_GET_LOCAL && code[i+2] == OP_SET_LOCAL) {
+                    uint8_t local1 = code[i+1];
+                    uint8_t local2 = code[i+3];
+                    if (local1 == local2) {
+                        // Если сразу после GET_LOCAL x идёт SET_LOCAL x без использования значения,
+                        // убираем GET_LOCAL
+                        code.erase(code.begin() + i, code.begin() + i + 2);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    size_t numericConstIdxInFunction(CodeObject* co, double value) {
+        for (size_t i = 0; i < co->constants.size(); ++i) {
+            if (IS_NUMBER(co->constants[i]) && AS_NUMBER(co->constants[i]) == value) {
+                return i;
+            }
+        }
+        co->constants.push_back(NUMBER(value));
+        return co->constants.size() - 1;
     }
 
     static std::map<std::string, uint8_t> compareOperator;

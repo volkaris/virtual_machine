@@ -17,6 +17,7 @@ class vm;
 
 typedef void (*InstructionHandler)(vm*, CallFrame&, uint8_t*&);
 
+
 static void handleHalt(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleConst(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleAdd(vm* machine, CallFrame &frame, uint8_t *&ip);
@@ -31,8 +32,6 @@ static void handleSetGlobal(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleGetLocal(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleSetLocal(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleLogicalNot(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleLogicalAnd(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleLogicalOr(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleJumpIfFalseOrPop(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleJumpIfTrueOrPop(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleDup(vm* machine, CallFrame &frame, uint8_t *&ip);
@@ -43,61 +42,48 @@ static void handleArrayGet(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleArraySet(vm* machine, CallFrame &frame, uint8_t *&ip);
 static void handleNil(vm* machine, CallFrame &frame, uint8_t *&ip);
 
-// Create the handlers table
-// Make sure every opcode from your OpCode.h is assigned here in the correct order.
+
 static InstructionHandler handlers[0xFF + 1] = {
-    handleHalt,            // 0x00 OP_HALT
-    handleConst,           // 0x01 OP_CONST
-    handleAdd,             // 0x02 OP_ADD
-    handleSub,             // 0x03 OP_SUB
-    handleMul,             // 0x04 OP_MUL
-    handleDiv,             // 0x05 OP_DIV
-    handleCompare,         // 0x06 OP_COMPARE
-    handleJumpIfFalse,     // 0x07 OP_JUMP_IF_FALSE
-    handleJump,            // 0x08 OP_JUMP
-    handleGetGlobal,       // 0x09 OP_GET_GLOBAL
-    nullptr,               // 0x0A (unused)
-    nullptr,               // 0x0B (unused)
-    nullptr,               // 0x0C (unused)
-    nullptr,               // 0x0D (unused)
-    nullptr,               // 0x0E (unused)
-    nullptr,               // 0x0F (unused)
-    handleSetGlobal,       // 0x10 OP_SET_GLOBAL
-    handleGetLocal,        // 0x11 OP_GET_LOCAL
-    handleSetLocal,        // 0x12 OP_SET_LOCAL
-    handleLogicalNot,      // 0x13 OP_LOGICAL_NOT
-    handleLogicalAnd,      // 0x14 OP_LOGICAL_AND
-    handleLogicalOr,       // 0x15 OP_LOGICAL_OR
-    handleJumpIfFalseOrPop,// 0x16 OP_JUMP_IF_FALSE_OR_POP
-    handleJumpIfTrueOrPop, // 0x17 OP_JUMP_IF_TRUE_OR_POP
-    handleDup,             // 0x18 OP_DUP
-    handleCall,            // 0x19 OP_CALL
-    handleReturn,          // 0x1A OP_RETURN
-    handleArray,           // 0x1B OP_ARRAY
-    handleArrayGet,        // 0x1C OP_ARRAY_GET
-    handleArraySet,        // 0x1D OP_ARRAY_SET
-    nullptr,               // 0x1E (unused)
-    nullptr,               // 0x1F (unused)
-    handleNil              // 0x20 OP_NIL
-    // Make sure to fill in any missing handlers if needed
+    handleHalt,
+    handleConst,
+    handleAdd,
+    handleSub,
+    handleMul,
+    handleDiv,
+    handleCompare,
+    handleJumpIfFalse,
+    handleJump,
+    handleGetGlobal,
+    handleSetGlobal,
+    handleGetLocal,
+    handleSetLocal,
+    handleLogicalNot,
+    handleJumpIfFalseOrPop,
+    handleJumpIfTrueOrPop,
+    handleDup,
+    handleNil,
+    handleCall,
+    handleReturn,
+    handleArray,
+    handleArrayGet,
+    handleArraySet,
 };
 
-
 struct CallFrame {
-    CodeObject *co; // Pointer to the function's CodeObject
-    uint8_t *ip; // Instruction pointer within the function's bytecode
-    std::vector<EvaluationValue> locals; // Local variables for the function
+    CodeObject *co; // Указатель на CodeObject текущей функции
+    uint8_t *ip; // Инструкционный указатель
+    std::vector<EvaluationValue> locals; // Локальные переменные
 
     CallFrame(CodeObject *codeObject)
         : co(codeObject), ip(codeObject->code.data()) {
-        // Determine the maximum slot index
+
         int maxSlot = -1;
         for (const auto &pair: co->localNames) {
             if (pair.first > maxSlot) {
                 maxSlot = pair.first;
             }
         }
-        // Initialize locals vector with NIL
+
         locals.resize(maxSlot + 1, NIL());
     }
 };
@@ -106,78 +92,39 @@ class vm {
 public:
     vm() : global(std::make_shared<Global>()),
            _parser(std::make_unique<syntax::parser>()),
-           _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {
-        setGlobalVariables();
-    }
+           _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {}
 
     EvaluationValue exec(const std::string &program) {
-
         std::shared_ptr<Exp> ast = _parser->parse(program);
         co = _bytecodeGenerator->compile(*ast);
 
-        // Initialize the main call frame
+        // Инициализация главного вызова (main)
         callStack.emplace_back(co);
 
-        // Initialize the instruction pointer in the main call frame
         CallFrame &currentFrame = callStack.back();
         currentFrame.ip = currentFrame.co->code.data();
         sp = stack.begin();
 
-        // Optionally, disassemble bytecode for debugging
-         _bytecodeGenerator->disassembleBytecode();
+
+        /*_bytecodeGenerator->disassembleBytecode();*/
 
         return evalExp();
     }
 
-    template<typename T>
-    void compare_values(const T &casted_left, const T &casted_right, uint8_t compare_op) {
-        bool res = false;
-        switch (compare_op) {
-            case 0:
-                res = casted_left < casted_right;
-                break;
-            case 1:
-                res = casted_left > casted_right;
-                break;
-            case 2:
-                res = casted_left == casted_right;
-                break;
-            case 3:
-                res = casted_left >= casted_right;
-                break;
-            case 4:
-                res = casted_left <= casted_right;
-                break;
-            case 5:
-                res = casted_left != casted_right;
-                break;
-            default: {
-                throw std::runtime_error("Unknown compare operation." + std::to_string(compare_op));
-            }
-        }
-        push(BOOLEAN(res));
-    }
 
     EvaluationValue evalExp() {
         while (!callStack.empty()) {
             CallFrame &currentFrame = callStack.back();
             uint8_t *&ip = currentFrame.ip;
 
-            // Instead of switch:
-            // auto op_code = READ_BYTE(ip);
-            // switch(op_code) { ... }
-
             uint8_t op_code = *ip++;
             handlers[op_code](this, currentFrame, ip);
 
-            // If callStack was cleared by handleHalt or OP_RETURN logic ended execution, break out
             if (callStack.empty()) {
                 break;
             }
         }
 
-        // After the main loop, return top of stack or NIL
-        // This depends on your original design
         if (sp == stack.begin()) {
             return NIL();
         }
@@ -185,11 +132,12 @@ public:
     }
 
 
-    void setGlobalVariables() {
-        /*global->addConst("x", 10);*/
-    }
 
     bool isTruth(const EvaluationValue &value) {
+        //  приведение к bool:
+        // false, nil -> false
+        // число 0 -> false, иначе true
+        // пустая строка -> false, иначе true
         if (IS_BOOL(value)) {
             return AS_BOOL(value);
         }
@@ -209,10 +157,9 @@ public:
         return false;
     }
 
-
     void push(const EvaluationValue &value) {
         if (static_cast<size_t>(sp - stack.begin()) == STACK_LIMIT) {
-            throw std::runtime_error("Stack overflow.");
+            throw std::runtime_error("стек переполнен");
         }
         *sp = value;
         sp++;
@@ -226,7 +173,7 @@ public:
 
     EvaluationValue pop() {
         if (sp == stack.begin()) {
-            throw std::runtime_error("Stack empty.");
+            throw std::runtime_error("стек пуст");
         }
         sp--;
         return *sp;
@@ -234,7 +181,7 @@ public:
 
     EvaluationValue peek() {
         if (sp == stack.begin()) {
-            throw std::runtime_error("Stack empty.");
+            throw std::runtime_error("стек пуст");
         }
         return *(sp - 1);
     }
@@ -247,19 +194,15 @@ public:
         return co->constants[READ_BYTE(ip)];
     }
 
-
     std::vector<EvaluationValue> locals;
 
-    //Global object
     std::shared_ptr<Global> global;
 
-    //Stack pointer
     std::array<EvaluationValue, STACK_LIMIT> stack;
     std::array<EvaluationValue, STACK_LIMIT>::iterator sp = stack.begin();
 
     std::unique_ptr<syntax::parser> _parser;
 
-    // Code object
     CodeObject *co;
 
     std::vector<CallFrame> callStack;
@@ -267,11 +210,7 @@ public:
     std::unique_ptr<bytecodeGenerator> _bytecodeGenerator;
 };
 
-
-// Define a function pointer type for handlers
-
-
-// For any null handlers, we should ensure they throw an error if reached:
+// Проверка, чтобы не было нулевых обработчиков
 static void verifyHandlers() {
     for (int i = 0; i <= 0xFF; i++) {
         if (handlers[i] == nullptr) {
@@ -282,22 +221,17 @@ static void verifyHandlers() {
     }
 }
 
-// Call this before running evalExp() to ensure no null handlers remain
-// In this example, we do it right after defining them
 static bool handlersInitialized = [](){
     verifyHandlers();
     return true;
 }();
 
 
-// ====================== Handler Implementations ======================
 
 static void handleHalt(vm* machine, CallFrame &frame, uint8_t *&ip) {
-    // Return top of stack or NIL if empty, and end execution
+    // Завершение выполнения: вернуть верх стека или NIL
     EvaluationValue result = IS_NIL(machine->peek()) ? NIL() : machine->pop();
-    // Clear call stack to end execution
     machine->callStack.clear();
-    // Push result back if you want final result:
     machine->push(result);
 }
 
@@ -336,7 +270,7 @@ static void handleDiv(vm* machine, CallFrame &frame, uint8_t *&ip) {
     double casted_left = AS_NUMBER(left);
     double casted_right = AS_NUMBER(right);
     if (casted_right == 0) {
-        throw std::runtime_error("Division by zero");
+        throw std::runtime_error("Деление на ноль");
     }
     machine->push(NUMBER(casted_left / casted_right));
 }
@@ -356,7 +290,7 @@ static void handleCompare(vm* machine, CallFrame &frame, uint8_t *&ip) {
             case 4: res = (casted_left <= casted_right); break;
             case 5: res = (casted_left != casted_right); break;
             default:
-                throw std::runtime_error("Unknown compare operation.");
+                throw std::runtime_error("неизвестная операция сравнения");
         }
         machine->push(BOOLEAN(res));
     };
@@ -366,7 +300,7 @@ static void handleCompare(vm* machine, CallFrame &frame, uint8_t *&ip) {
     } else if (IS_STRING(left) && IS_STRING(right)) {
         compare_values(AS_CPP_STRING(left), AS_CPP_STRING(right));
     } else {
-        throw std::runtime_error("Type error in COMPARE operation.");
+        throw std::runtime_error("ошибка типов в сравнении");
     }
 }
 
@@ -412,26 +346,16 @@ static void handleLogicalNot(vm* machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(BOOLEAN(result));
 }
 
-static void handleLogicalAnd(vm* machine, CallFrame &frame, uint8_t *&ip) {
-    // If desired, implement logical AND short-circuiting if needed
-    // For now, throw if not implemented
-    throw std::runtime_error("OP_LOGICAL_AND not implemented in handlers");
-}
-
-static void handleLogicalOr(vm* machine, CallFrame &frame, uint8_t *&ip) {
-    // If desired, implement logical OR short-circuiting if needed
-    throw std::runtime_error("OP_LOGICAL_OR not implemented in handlers");
-}
 
 static void handleJumpIfFalseOrPop(vm* machine, CallFrame &frame, uint8_t *&ip) {
     uint16_t address = (ip[0] << 8) | ip[1];
     ip += 2;
     auto value = machine->peek();
     if (!machine->isTruth(value)) {
-        machine->pop(); // Remove the value
+        machine->pop();
         ip = &frame.co->code[address];
     } else {
-        machine->pop(); // Remove the value if not jumping
+        machine->pop();
     }
 }
 
@@ -440,10 +364,10 @@ static void handleJumpIfTrueOrPop(vm* machine, CallFrame &frame, uint8_t *&ip) {
     ip += 2;
     auto value = machine->peek();
     if (machine->isTruth(value)) {
-        machine->pop(); // Remove the value
+        machine->pop();
         ip = &frame.co->code[address];
     } else {
-        machine->pop(); // Remove the value if not jumping
+        machine->pop();
     }
 }
 
@@ -462,17 +386,15 @@ static void handleCall(vm* machine, CallFrame &frame, uint8_t *&ip) {
 
     EvaluationValue funcVal = machine->pop();
     if (!IS_OBJECT(funcVal) || !IS_CODE(funcVal)) {
-        throw std::runtime_error("Attempting to call a non-function.");
+        throw std::runtime_error("попытка вызова не функции");
     }
 
     CodeObject* functionCo = AS_CODE(funcVal);
 
-    // Create a new call frame for the function
     CallFrame newFrame(functionCo);
 
-    // Assign arguments to the function's local variables
     size_t paramIndex = 0;
-    for (int slot = 0; slot < (int)functionCo->localNames.size(); ++slot) {
+    for (int slot = 0; slot < static_cast<int>(functionCo->localNames.size()); ++slot) {
         if (functionCo->localNames.find(slot) != functionCo->localNames.end()) {
             if (paramIndex < args.size()) {
                 newFrame.locals[slot] = args[paramIndex++];
@@ -490,12 +412,10 @@ static void handleReturn(vm* machine, CallFrame &frame, uint8_t *&ip) {
     machine->callStack.pop_back();
 
     if (machine->callStack.empty()) {
-        // No more frames, this ends execution
         machine->push(returnValue);
         return;
     }
 
-    // Push the return value onto the previous frame's stack
     machine->push(returnValue);
 }
 
@@ -508,17 +428,17 @@ static void handleArrayGet(vm* machine, CallFrame &frame, uint8_t *&ip) {
     EvaluationValue arrayVal = machine->pop();
 
     if (!IS_ARRAY(arrayVal)) {
-        throw std::runtime_error("Attempting to index a non-array.");
+        throw std::runtime_error("попытка индексации не по массиву");
     }
     ArrayObject* array = AS_ARRAY(arrayVal);
 
     if (!IS_NUMBER(indexVal)) {
-        throw std::runtime_error("Array index must be a number.");
+        throw std::runtime_error("индекс массива должен быть числом");
     }
 
     size_t index = (size_t)AS_NUMBER(indexVal);
     if (index >= array->elements.size()) {
-        throw std::runtime_error("Array index out of bounds.");
+        throw std::runtime_error("индекс больше размера массива");
     }
 
     machine->push(array->elements[index]);
@@ -530,15 +450,15 @@ static void handleArraySet(vm* machine, CallFrame &frame, uint8_t *&ip) {
     EvaluationValue arrayVal = machine->pop();
 
     if (!IS_ARRAY(arrayVal)) {
-        throw std::runtime_error("Attempting to index a non-array.");
+        throw std::runtime_error("попытка индексации не по массиву");
     }
     ArrayObject* array = AS_ARRAY(arrayVal);
 
     if (!IS_NUMBER(indexVal)) {
-        throw std::runtime_error("Array index must be a number.");
+        throw std::runtime_error("индекс массива должен быть числом");
     }
 
-    size_t index = (size_t)AS_NUMBER(indexVal);
+    const auto index = static_cast<size_t>(AS_NUMBER(indexVal));
     if (index >= array->elements.size()) {
         array->elements.resize(index + 1, NIL());
     }
