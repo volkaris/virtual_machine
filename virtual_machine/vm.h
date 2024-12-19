@@ -394,7 +394,7 @@ static void handleCall(vm* machine, CallFrame &frame, uint8_t *&ip) {
 
     EvaluationValue funcVal = machine->pop();
     if (!IS_OBJECT(funcVal) || !IS_CODE(funcVal)) {
-        throw std::runtime_error("попытка вызова не функции");
+        throw std::runtime_error("Attempting to call a non-function.");
     }
 
     CodeObject* functionCo = AS_CODE(funcVal);
@@ -402,13 +402,12 @@ static void handleCall(vm* machine, CallFrame &frame, uint8_t *&ip) {
     CallFrame newFrame(functionCo);
 
     size_t paramIndex = 0;
-    for (int slot = 0; slot < static_cast<int>(functionCo->localNames.size()); ++slot) {
-        if (functionCo->localNames.find(slot) != functionCo->localNames.end()) {
-            if (paramIndex < args.size()) {
-                newFrame.locals[slot] = args[paramIndex++];
-            } else {
-                newFrame.locals[slot] = NIL();
-            }
+    // Correct iteration over all local variable slots
+    for (const auto& [slot, name] : functionCo->localNames) {
+        if (paramIndex < args.size()) {
+            newFrame.locals[slot] = args[paramIndex++];
+        } else {
+            newFrame.locals[slot] = NIL();
         }
     }
 
