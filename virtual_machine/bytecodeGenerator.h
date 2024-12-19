@@ -546,49 +546,181 @@ private:
     }
 
     void foldConstants(CodeObject* co) {
-        //  если видим OP_CONST c1; OP_CONST c2; OP_ADD,
-        // и оба c1 и c2 - числа, можно свести к одному числу
+    std::vector<uint8_t>& code = co->code;
+    bool changed = true;
 
-        std::vector<uint8_t>& code = co->code;
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            for (size_t i = 0; i + 2 < code.size(); i++) {
-                if (code[i] == OP_CONST && code[i+2] == OP_CONST && i+4 < code.size()) {
-                    uint8_t cIndex1 = code[i+1];
-                    uint8_t cIndex2 = code[i+3];
+    // Helper lambda to determine instruction length
+    auto getInstructionLength = [&](uint8_t opcode) -> size_t {
+        switch (opcode) {
+            case OP_CONST:
+            case OP_GET_LOCAL:
+            case OP_SET_LOCAL:
+            case OP_GET_GLOBAL:
+            case OP_SET_GLOBAL:
+            case OP_LOGICAL_NOT:
+            case OP_JUMP_IF_FALSE_OR_POP:
+            case OP_JUMP_IF_TRUE_OR_POP:
+            case OP_DUP:
+            case OP_CALL:
+                return 2; // Opcode + operand
+            case OP_JUMP_IF_FALSE:
+            case OP_JUMP:
+                return 3; // Opcode + 2-byte operand
+            case OP_ADD:
+            case OP_SUB:
+            case OP_MUL:
+            case OP_DIV:
+            case OP_COMPARE:
+            case OP_ARRAY:
+            case OP_ARRAY_GET:
+            case OP_ARRAY_SET:
+            case OP_PRINT:
+            case OP_NIL:
+            case OP_HALT:
+            case OP_RETURN:
+                return 1; // Single-byte opcode
+            default:
+                throw std::runtime_error("Unknown opcode encountered in foldConstants: " + std::to_string(opcode));
+        }
+    };
 
-                    if ((code[i+4] == OP_ADD || code[i+4] == OP_SUB || code[i+4] == OP_MUL || code[i+4] == OP_DIV)
-                        && IS_NUMBER(co->constants[cIndex1]) && IS_NUMBER(co->constants[cIndex2])) {
+    while (changed) {
+        changed = false;
+        size_t i = 0;
+        while (i + 4 < code.size()) { // Need at least 5 bytes for the pattern
+            uint8_t opcode1 = code[i];
+            size_t len1;
+            try {
+                len1 = getInstructionLength(opcode1);
+            } catch (const std::runtime_error& e) {
+                std::cerr << e.what() << std::endl;
+                break; // Stop folding on unknown opcode
+            }
 
-                        double leftVal = AS_NUMBER(co->constants[cIndex1]);
-                        double rightVal = AS_NUMBER(co->constants[cIndex2]);
-                        double result;
-                        switch (code[i+4]) {
-                            case OP_ADD: result = leftVal + rightVal; break;
-                            case OP_SUB: result = leftVal - rightVal; break;
-                            case OP_MUL: result = leftVal * rightVal; break;
-                            case OP_DIV:
-                                if (rightVal == 0) continue;
-                                result = leftVal / rightVal;
-                                break;
-                            default: continue;
+            // Check if the first instruction is OP_CONST
+            if (opcode1 == OP_CONST && (i + len1 + 3 < code.size())) { // Ensure enough bytes for the pattern
+                uint8_t cIndex1 = code[i + 1];
+
+                // Next instruction should be OP_CONST
+                uint8_t opcode2 = code[i + len1];
+                if (opcode2 == OP_CONST) {
+                    size_t len2;
+                    try {
+                        len2 = getInstructionLength(opcode2);
+                    } catch (const std::runtime_error& e) {
+                        std::cerr << e.what() << std::endl;
+                        break; // Stop folding on unknown opcode
+                    }
+
+                    if (i + len1 + len2 + 1 >= code.size()) {
+                        // Not enough bytes for OP_ADD/OP_SUB etc.
+                        i += len1;
+                        continue;
+                    }
+
+                    uint8_t cIndex2 = code[i + len1 + 1];
+                    uint8_t opcode3 = code[i + len1 + len2];
+
+                    // Check if the third instruction is an arithmetic operation
+                    if (opcode3 == OP_ADD || opcode3 == OP_SUB ||
+                        opcode3 == OP_MUL || opcode3 == OP_DIV) {
+
+                        // Debugging: Print the current pattern being analyzed
+                        /*std::cout << "Attempting to fold constants at offset " << i
+                                  << " with indices " << static_cast<int>(cIndex1)
+                                  << " and " << static_cast<int>(cIndex2) << std::endl;*/
+
+                        // Ensure constant indexes are within bounds
+                        if (cIndex1 >= co->constants.size() || cIndex2 >= co->constants.size()) {
+                            std::cerr << "Error: Constant index out of bounds during foldConstants. "
+                                      << "cIndex1=" << static_cast<int>(cIndex1)
+                                      << ", cIndex2=" << static_cast<int>(cIndex2)
+                                      << ", constants.size()=" << co->constants.size() << std::endl;
+                            // Skip this pattern as it is invalid
+                            i += len1;
+                            continue;
                         }
 
-                        size_t newIndex = numericConstIdxInFunction(co, result);
+                        // Ensure both constants are numbers
+                        if (IS_NUMBER(co->constants[cIndex1]) && IS_NUMBER(co->constants[cIndex2])) {
+                            double leftVal = AS_NUMBER(co->constants[cIndex1]);
+                            double rightVal = AS_NUMBER(co->constants[cIndex2]);
+                            double result;
 
-                        // Заменяем последовательность на один OP_CONST
-                        code[i] = OP_CONST;
-                        code[i+1] = (uint8_t)newIndex;
-                        code.erase(code.begin() + i + 2, code.begin() + i + 5);
+                            // Perform the arithmetic operation
+                            switch (opcode3) {
+                                case OP_ADD:
+                                    result = leftVal + rightVal;
+                                    break;
+                                case OP_SUB:
+                                    result = leftVal - rightVal;
+                                    break;
+                                case OP_MUL:
+                                    result = leftVal * rightVal;
+                                    break;
+                                case OP_DIV:
+                                    if (rightVal == 0) {
+                                        std::cerr << "Error: Division by zero during foldConstants." << std::endl;
+                                        i += len1 + len2;
+                                        continue;
+                                    }
+                                    result = leftVal / rightVal;
+                                    break;
+                                default:
+                                    // This case should not occur due to the initial check
+                                    i += len1 + len2;
+                                    continue;
+                            }
 
-                        changed = true;
-                        break;
+                            // Add or retrieve the folded constant
+                            size_t newIndex = numericConstIdx(result);
+
+                            // Replace the sequence with a single OP_CONST newIndex
+                            code[i] = OP_CONST;
+                            code[i + 1] = static_cast<uint8_t>(newIndex);
+                            // Remove OP_CONST c2 and the arithmetic operation
+                            code.erase(code.begin() + i + 2, code.begin() + i + 2 + len2 + 1); // Remove len2 bytes for OP_CONST and cIndex2, plus 1 byte for opcode3
+
+                            /*
+                            std::cout << "Folded constants into new constant index " << newIndex << std::endl;
+                            */
+
+                            changed = true;
+                            // After modifying the code, restart the loop
+                            break;
+                        } else {
+                            // If constants are not numbers, skip folding
+                            i += len1 + len2;
+                        }
+                    } else {
+                        // Third instruction is not an arithmetic operation, skip
+                        i += len1 + len2;
                     }
+                } else {
+                    // Second instruction is not OP_CONST, skip
+                    size_t len2;
+                    try {
+                        len2 = getInstructionLength(opcode2);
+                    } catch (const std::runtime_error& e) {
+                        std::cerr << e.what() << std::endl;
+                        break; // Stop folding on unknown opcode
+                    }
+                    i += len2;
                 }
+            } else {
+                // Current instruction is not OP_CONST, skip based on its length
+                size_t instrLen;
+                try {
+                    instrLen = getInstructionLength(opcode1);
+                } catch (const std::runtime_error& e) {
+                    std::cerr << e.what() << std::endl;
+                    break; // Stop folding on unknown opcode
+                }
+                i += instrLen;
             }
         }
     }
+}
 
     void eliminateRedundantLoadsAndStores(CodeObject* co) {
         // удаление избыточных загрузок/сохранений
