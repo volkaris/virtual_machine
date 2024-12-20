@@ -10,7 +10,7 @@
 #include "bytecodeGenerator.h"
 #include "Global.h"
 
-#define STACK_LIMIT 90000
+#define STACK_LIMIT 80000
 
 struct CallFrame;
 class vm;
@@ -98,12 +98,19 @@ public:
            _parser(std::make_unique<syntax::parser>()),
            _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {
         setGlobalVariables();
+        initializeBuiltins();
     }
 
     EvaluationValue exec(const std::string &program) {
 
         std::shared_ptr<Exp> ast = _parser->parse(program);
         co = _bytecodeGenerator->compile(*ast);
+
+
+        // Добавить глобальные функции как переменные
+        for (const auto& builtin : global->builtinFunctions) {
+            defineBuiltin(builtin.first);
+        }
 
         // Initialize the main call frame
         callStack.emplace_back(co);
@@ -176,7 +183,7 @@ public:
 
 
     void setGlobalVariables() {
-        /*global->addConst("x", 10);*/
+        global->setGlobalVariables();
     }
 
     bool isTruth(const EvaluationValue &value) {
@@ -237,6 +244,33 @@ public:
         return co->constants[READ_BYTE(ip)];
     }
 
+    void initializeBuiltins() {
+        for (const auto& [name, func] : global->builtinFunctions) {
+            // Создание CodeObject для встроенной функции
+            CodeObject* codeObj = new CodeObject(name);
+            builtins[name] = codeObj;
+
+            // Добавление в глобальные переменные
+            int globalIdx = global->getGlobalIndex(name);
+            if (globalIdx == -1) {
+                global->define(name);
+                globalIdx = global->getGlobalIndex(name);
+            }
+            global->set(globalIdx, ALLOC_CODE(name));
+        }
+    }
+
+    void defineBuiltin(const std::string& name) {
+        int globalIdx = global->getGlobalIndex(name);
+        if (globalIdx == -1) {
+            throw std::runtime_error("Не удалось определить встроенную функцию: " + name);
+        }
+        // Привязка CodeObject к встроенной функции
+        CodeObject* codeObj = builtins[name];
+        global->globals[globalIdx].value = ALLOC_CODE(name);
+        AS_CODE(global->globals[globalIdx].value)->name = name;
+        AS_CODE(global->globals[globalIdx].value)->constants.push_back(NUMBER(0)); // Placeholder
+    }
 
     std::vector<EvaluationValue> locals;
 
@@ -255,6 +289,8 @@ public:
     std::vector<CallFrame> callStack;
 
     std::unique_ptr<bytecodeGenerator> _bytecodeGenerator;
+
+    std::unordered_map<std::string, CodeObject*> builtins;
 };
 
 
@@ -457,22 +493,38 @@ static void handleCall(vm* machine, CallFrame &frame, uint8_t *&ip) {
 
     CodeObject* functionCo = AS_CODE(funcVal);
 
-    // Create a new call frame for the function
-    CallFrame newFrame(functionCo);
-
-    // Assign arguments to the function's local variables
-    size_t paramIndex = 0;
-    for (int slot = 0; slot < functionCo->localNames.size(); ++slot) {
-        if (functionCo->localNames.find(slot) != functionCo->localNames.end()) {
-            if (paramIndex < args.size()) {
-                newFrame.locals[slot] = args[paramIndex++];
-            } else {
-                newFrame.locals[slot] = NIL();
-            }
+    // Проверка, является ли функция встроенной
+    bool isBuiltin = false;
+    std::string builtinName;
+    for (const auto& [name, codeObj] : machine->builtins) {
+        if (name == functionCo->name) {
+            isBuiltin = true;
+            builtinName = name;
+            break;
         }
     }
 
-    machine->callStack.push_back(newFrame);
+    if (isBuiltin) {
+        // Вызов встроенной функции через Global
+        EvaluationValue result = machine->global->callBuiltin(builtinName, args);
+        machine->push(result);
+    }
+    else {
+        // Вызов пользовательской функции
+        // Создание нового фрейма вызова
+        CallFrame newFrame(functionCo);
+
+        // Установка локальных переменных (параметров)
+        for (size_t i = 0; i < args.size(); ++i) {
+            int slot = i;
+            if (slot >= functionCo->localNames.size()) {
+                throw std::runtime_error("Слишком много аргументов при вызове функции.");
+            }
+            newFrame.locals[slot] = args[i];
+        }
+
+        machine->callStack.push_back(newFrame);
+    }
 }
 
 static void handleReturn(vm* machine, CallFrame &frame, uint8_t *&ip) {

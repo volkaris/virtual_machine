@@ -1,24 +1,35 @@
-func bubbleSort(arr, n) {
-    var i = 0;
-    while (i < n) {
-        var j = 0;
-        while (j < n - i - 1) {
-            if (arr[j] > arr[j + 1]) {
-                var temp = arr[j];
-                arr[j] = arr[j + 1];
-                arr[j + 1] = temp;
+ func generateRandomArray(limit, maxValue) {
+            var arr = [];
+            var i = 0;
+            while (i < limit) {
+                arr[i] = random(maxValue);
+                i = i + 1;
             }
-            j = j + 1;
+            return arr;
         }
-        i = i + 1;
-    }
-    return arr;
-}
+
+        func sortArray(arr, n) {
+            var i = 0;
+            while (i < n) {
+                var j = 0;
+                while (j < n - i - 1) {
+                    if (arr[j] > arr[j + 1]) {
+                        var temp = arr[j];
+                        arr[j] = arr[j + 1];
+                        arr[j + 1] = temp;
+                    }
+                    j = j + 1;
+                }
+                i = i + 1;
+            }
+            return arr;
+        }
+
+        var randomArray = generateRandomArray(5000, 10000);
 
 
-var largeArray = [
-    548, 710, 468, 897, 992, 256, 186, 227, 483, 501];
+        print(randomArray);
+print("----------------------------------------------------------------------------------");
 
-var sortedLargeArray = bubbleSort(largeArray, 10);
-
-print(sortedLargeArray);
+        var sortedArray=sortArray(randomArray,5000);
+        print(sortedArray);
