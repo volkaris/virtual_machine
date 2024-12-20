@@ -1,0 +1,19 @@
+func foo() {
+    var x = 10;
+    x = x * 1;   // Strength reduction: multiply by 1 will be removed
+    x = x * 0;   // Strength reduction: x*0 => just OP_CONST 0
+
+    var b=100;
+    var a=200;
+    var h=4300;
+
+    // Some code that leads to halt early:
+    return 10;
+    // Dead code below (never runs):
+    var y = 5;
+    y = y * 2;
+}
+
+for (var i = 0; i < 100; i = i + 1) {
+    foo(); // calling foo 100 times
+}

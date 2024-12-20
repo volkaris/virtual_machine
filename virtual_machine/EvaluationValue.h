@@ -52,20 +52,19 @@ struct StringObject : Object {
 };
 
 struct CodeObject : public Object {
-    explicit CodeObject(std::string name) : Object(ObjectType::CODE), name(std::move(name)) {
-    }
 
+    explicit CodeObject(std::string name) : Object(ObjectType::CODE), name(std::move(name)) {}
 
     std::string name;
-
-
     std::vector<EvaluationValue> constants;
-
-
     std::vector<uint8_t> code;
-
-
     std::unordered_map<int, std::string> localNames;
+    bool isOptimized = false;
+    std::vector<uint8_t> optimizedCode;
+
+    const uint8_t* currentCodeStart() const {
+        return isOptimized ? optimizedCode.data() : code.data();
+    }
 };
 
 struct ArrayObject : Object {

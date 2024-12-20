@@ -104,7 +104,7 @@ struct CallFrame {
     std::vector<EvaluationValue> locals; // Local variables for the function
 
     CallFrame(CodeObject *codeObject)
-        : co(codeObject), ip(codeObject->code.data()) {
+        : co(codeObject) {
         // Determine the maximum slot index
         int maxSlot = -1;
         for (const auto &pair: co->localNames) {
@@ -114,6 +114,7 @@ struct CallFrame {
         }
         // Initialize locals vector with NIL
         locals.resize(maxSlot + 1, NIL());
+        ip = const_cast<uint8_t *>(co->currentCodeStart());
     }
 };
 
@@ -325,7 +326,7 @@ public:
 
 
 // For any null handlers, we should ensure they throw an error if reached:
-static void verifyHandlers() {
+/*static void verifyHandlers() {
     for (int i = 0; i <= 0xFF; i++) {
         if (handlers[i] == nullptr) {
             handlers[i] = [](vm *, CallFrame &, uint8_t *&) {
@@ -340,7 +341,7 @@ static void verifyHandlers() {
 static bool handlersInitialized = []() {
     verifyHandlers();
     return true;
-}();
+}();*/
 
 
 // ====================== Handler Implementations ======================
@@ -433,16 +434,40 @@ static void handleJumpIfFalse(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint16_t addr = (ip[0] << 8) | ip[1];
     ip += 2;
     EvaluationValue condition = machine->pop();
+
     if (IS_BOOL(condition) && !AS_BOOL(condition)) {
-        ip = &frame.co->code[addr];
+        size_t currentPos = ip - (frame.co->isOptimized ? frame.co->optimizedCode.data() : frame.co->code.data());
+        if (addr < currentPos && !frame.co->isOptimized) {
+            machine->_bytecodeGenerator->optimizeBytecode(frame.co);
+            frame.co->isOptimized = true;
+            ptrdiff_t offset = addr;
+            ip = (uint8_t*)frame.co->optimizedCode.data() + offset;
+            return;
+        }
+
+        ip = (uint8_t*)(frame.co->isOptimized ? frame.co->optimizedCode.data() : frame.co->code.data()) + addr;
     }
 }
 
 static void handleJump(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint16_t addr = (ip[0] << 8) | ip[1];
     ip += 2;
-    ip = &frame.co->code[addr];
+
+    size_t currentPos = ip - (frame.co->isOptimized ? frame.co->optimizedCode.data() : frame.co->code.data());
+    // If jumping backward and not optimized yet, do it now
+    if (addr < currentPos && !frame.co->isOptimized) {
+        machine->_bytecodeGenerator->optimizeBytecode(frame.co);
+        frame.co->isOptimized = true;
+        // After optimization, reset ip to the new code array:
+        // Recalculate pointers since code moved
+        ptrdiff_t offset = addr;
+        ip = (uint8_t*)frame.co->optimizedCode.data() + offset;
+        return;
+    }
+
+    ip = (uint8_t*)(frame.co->isOptimized ? frame.co->optimizedCode.data() : frame.co->code.data()) + addr;
 }
+
 
 static void handleGetGlobal(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint8_t globalIndex = *ip++;
@@ -526,7 +551,6 @@ static void handleCall(vm *machine, CallFrame &frame, uint8_t *&ip) {
 
     CodeObject *functionCo = AS_CODE(funcVal);
 
-    // Проверка, является ли функция встроенной
     bool isBuiltin = false;
     std::string builtinName;
     for (const auto &[name, codeObj]: machine->builtins) {
@@ -538,21 +562,21 @@ static void handleCall(vm *machine, CallFrame &frame, uint8_t *&ip) {
     }
 
     if (isBuiltin) {
-        // Вызов встроенной функции через Global
         EvaluationValue result = machine->global->callBuiltin(builtinName, args);
         machine->push(result);
     } else {
-        // Вызов пользовательской функции
-        // Создание нового фрейма вызова
+        // CHANGE: JIT optimization if not done yet
+        if (!functionCo->isOptimized) {
+            machine->_bytecodeGenerator->optimizeBytecode(functionCo);
+            functionCo->isOptimized = true; // Cached now
+        }
+
+        // Create call frame after ensuring optimization state
         CallFrame newFrame(functionCo);
 
-        // Установка локальных переменных (параметров)
+        // Set function arguments
         for (size_t i = 0; i < args.size(); ++i) {
-            int slot = i;
-            if (slot >= functionCo->localNames.size()) {
-                throw std::runtime_error("Слишком много аргументов при вызове функции.");
-            }
-            newFrame.locals[slot] = args[i];
+            newFrame.locals[i] = args[i];
         }
 
         machine->callStack.push_back(newFrame);
