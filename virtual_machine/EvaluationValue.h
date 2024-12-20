@@ -28,14 +28,14 @@ struct EvaluationValue {
     EvaluationValueType type;
 
 
-    std::variant<bool, int, Object *, std::nullptr_t> value;
+    std::variant<bool, int64_t, Object *, std::nullptr_t> value;
 
     [[nodiscard]] bool boolean() const {
         return std::get<bool>(value);
     }
 
-    [[nodiscard]] int number() const {
-        return std::get<int>(value);
+    [[nodiscard]] int64_t number() const {
+        return std::get<int64_t>(value);
     }
 
     [[nodiscard]] Object *object() const {
@@ -88,7 +88,7 @@ inline ArrayObject *AS_ARRAY(const EvaluationValue &value) {
     return static_cast<ArrayObject *>(value.object());
 }
 
-inline EvaluationValue NUMBER(int value) {
+inline EvaluationValue NUMBER(int64_t value) {
     EvaluationValue val;
     val.type = EvaluationValueType::NUMBER;
     val.value = value;

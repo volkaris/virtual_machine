@@ -1,4 +1,4 @@
- func generateRandomArray(limit, maxValue) {
+func generateRandomArray(limit, maxValue) {
             var arr = [];
             var i = 0;
             while (i < limit) {
@@ -33,3 +33,4 @@ print("-------------------------------------------------------------------------
 
         var sortedArray=sortArray(randomArray,10000);
         print(sortedArray);
+
