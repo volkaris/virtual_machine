@@ -1,6 +1,8 @@
 #pragma once
 
 #include <unordered_map>
+#include <unordered_set>
+
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "OpCode.h"
@@ -25,7 +27,7 @@ public :
         emit(OP_HALT);
 
 
-        optimizeBytecode(co);
+        /*optimizeBytecode(co);*/
 
         return co;
     }
@@ -465,7 +467,7 @@ public :
 
     void disassembleBytecode() { disassembler->disassemble(co); }
 
-private:
+
     std::shared_ptr<Global> global;
 
     std::unique_ptr<Disassembler> disassembler;
@@ -536,53 +538,29 @@ private:
         // Константная свёртка
         foldConstants(co);
 
-
         // Устранение избыточных загрузок/сохранений
         eliminateRedundantLoadsAndStores(co);
 
 
+
+
+        co->optimizedCode = co->code;
+
+        std::cout << "Optimizing code object '" << co->name << "' now... (only once)\n";
         /*std::cout << "После оптимизации\n";
         disassembler->disassemble(co);*/
     }
+
+    
+
+
 
     void foldConstants(CodeObject* co) {
     std::vector<uint8_t>& code = co->code;
     bool changed = true;
 
     // Helper lambda to determine instruction length
-    auto getInstructionLength = [&](uint8_t opcode) -> size_t {
-        switch (opcode) {
-            case OP_CONST:
-            case OP_GET_LOCAL:
-            case OP_SET_LOCAL:
-            case OP_GET_GLOBAL:
-            case OP_SET_GLOBAL:
-            case OP_LOGICAL_NOT:
-            case OP_JUMP_IF_FALSE_OR_POP:
-            case OP_JUMP_IF_TRUE_OR_POP:
-            case OP_DUP:
-            case OP_CALL:
-                return 2; // Opcode + operand
-            case OP_JUMP_IF_FALSE:
-            case OP_JUMP:
-                return 3; // Opcode + 2-byte operand
-            case OP_ADD:
-            case OP_SUB:
-            case OP_MUL:
-            case OP_DIV:
-            case OP_COMPARE:
-            case OP_ARRAY:
-            case OP_ARRAY_GET:
-            case OP_ARRAY_SET:
-            /*case OP_PRINT:*/
-            case OP_NIL:
-            case OP_HALT:
-            case OP_RETURN:
-                return 1; // Single-byte opcode
-            default:
-                throw std::runtime_error("Unknown opcode encountered in foldConstants: " + std::to_string(opcode));
-        }
-    };
+
 
     while (changed) {
         changed = false;
@@ -744,6 +722,49 @@ private:
             }
         }
     }
+
+    size_t getInstructionLength(uint8_t opcode) {
+        switch (opcode) {
+            case OP_CONST:
+            case OP_GET_LOCAL:
+            case OP_SET_LOCAL:
+            case OP_GET_GLOBAL:
+            case OP_SET_GLOBAL:
+            case OP_LOGICAL_NOT:
+            case OP_JUMP_IF_FALSE_OR_POP:
+            case OP_JUMP_IF_TRUE_OR_POP:
+            case OP_DUP:
+            case OP_CALL:
+                return 2;
+            case OP_JUMP_IF_FALSE:
+            case OP_JUMP:
+                return 3;
+            case OP_ADD:
+            case OP_SUB:
+            case OP_MUL:
+            case OP_DIV:
+            case OP_COMPARE:
+            case OP_ARRAY:
+            case OP_ARRAY_GET:
+            case OP_ARRAY_SET:
+            case OP_NIL:
+            case OP_HALT:
+            case OP_RETURN:
+                return 1;
+            default:
+                throw std::runtime_error("Unknown opcode encountered: " + std::to_string(opcode));
+        }
+    }
+
+    inline uint16_t readU16(const std::vector<uint8_t> &code, size_t pos) {
+        return (uint16_t)((code[pos] << 8) | code[pos + 1]);
+    }
+
+    inline void writeU16(std::vector<uint8_t> &code, size_t pos, uint16_t val) {
+        code[pos] = (uint8_t)((val >> 8) & 0xFF);
+        code[pos + 1] = (uint8_t)(val & 0xFF);
+    }
+
 
     size_t numericConstIdxInFunction(CodeObject* co, double value) {
         for (size_t i = 0; i < co->constants.size(); ++i) {
