@@ -25,11 +25,11 @@
             return arr;
         }
 
-        var randomArray = generateRandomArray(5000, 10000);
+        var randomArray = generateRandomArray(10000, 1000000);
 
 
         print(randomArray);
 print("----------------------------------------------------------------------------------");
 
-        var sortedArray=sortArray(randomArray,5000);
+        var sortedArray=sortArray(randomArray,10000);
         print(sortedArray);

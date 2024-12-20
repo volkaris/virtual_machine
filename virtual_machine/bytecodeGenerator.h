@@ -449,14 +449,14 @@ public :
                 break;
             }
 
-            case ExpType::PRINT_STATEMENT: {
+            /*case ExpType::PRINT_STATEMENT: {
 
                 generate(*exp.varValue);
 
 
                 emit(OP_PRINT);
                 break;
-            }
+            }*/
 
 
 
@@ -574,7 +574,7 @@ private:
             case OP_ARRAY:
             case OP_ARRAY_GET:
             case OP_ARRAY_SET:
-            case OP_PRINT:
+            /*case OP_PRINT:*/
             case OP_NIL:
             case OP_HALT:
             case OP_RETURN:

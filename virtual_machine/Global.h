@@ -86,13 +86,13 @@ struct Global {
 
 
         // Регистрация встроенной функции print
-        /*registerBuiltin("print", [](const std::vector<EvaluationValue>& args) -> EvaluationValue {
+        registerBuiltin("print", [](const std::vector<EvaluationValue>& args) -> EvaluationValue {
             for (const auto& arg : args) {
                 std::cout << evaluationValueToConstantString(arg) << " ";
             }
             std::cout << std::endl;
             return NIL(); // Функция print ничего не возвращает
-        });*/
+        });
 
         // Добавьте другие встроенные функции по мере необходимости
     }

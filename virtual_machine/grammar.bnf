@@ -7,7 +7,7 @@
 
 \s+                %empty
 
-"print"                 PRINT
+/*"print"                 PRINT*/
 
 "return"                 RETURN
 "func"                   FUNC
@@ -78,7 +78,7 @@ enum class ExpType {
     RETURN_STATEMENT,
     ARRAY_LITERAL,
     ARRAY_ACCESS  ,
-     PRINT_STATEMENT
+    /* PRINT_STATEMENT*/
 };
 
 struct Exp {
@@ -175,13 +175,13 @@ Exp(ExpType type, std::shared_ptr<Exp> singleValue)
         case ExpType::RETURN_STATEMENT:
             returnValue = singleValue;
             break;
-        case ExpType::PRINT_STATEMENT:
+      /*  case ExpType::PRINT_STATEMENT:
             varValue = singleValue;
             break;
 
         default:
             varValue = singleValue;
-            break;
+            break;*/
     }
 }
 
@@ -235,7 +235,7 @@ using Value = std::shared_ptr<Exp>;
 %token LOGICAL_NOT
 
 
-%token PRINT
+/*%token PRINT*/
 
 
 %%
@@ -256,7 +256,7 @@ Statement
     : MatchedStatement
     | UnmatchedStatement
     | ReturnStatement
-    | PrintStatement
+/*    | PrintStatement*/
     ;
 
 MatchedStatement
@@ -271,10 +271,10 @@ UnmatchedStatement
     : IfWithoutElse
     ;
 
-    PrintStatement
+   /* PrintStatement
         : PRINT  L_PAREN Expression R_PAREN SEMICOLON
             { $$ = std::make_shared<Exp>(ExpType::PRINT_STATEMENT, $3); }
-        ;
+        ;*/
 
 IfStatement
     : IF L_PAREN Expression R_PAREN MatchedStatement ELSE MatchedStatement

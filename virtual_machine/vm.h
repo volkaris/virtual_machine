@@ -4,7 +4,6 @@
 #include <string>
 #include <memory>
 #include <array>
-#include "OpCode.h"
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "bytecodeGenerator.h"
@@ -15,34 +14,60 @@
 struct CallFrame;
 class vm;
 
-typedef void (*InstructionHandler)(vm*, CallFrame&, uint8_t*&);
+typedef void (*InstructionHandler)(vm *, CallFrame &, uint8_t *&);
 
-static void handleHalt(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleConst(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleAdd(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleSub(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleMul(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleDiv(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleCompare(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleJumpIfFalse(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleJump(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleGetGlobal(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleSetGlobal(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleGetLocal(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleSetLocal(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleLogicalNot(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleLogicalAnd(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleLogicalOr(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleJumpIfFalseOrPop(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleJumpIfTrueOrPop(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleDup(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleCall(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleReturn(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleArray(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleArrayGet(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleArraySet(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handleNil(vm* machine, CallFrame &frame, uint8_t *&ip);
-static void handlePrint(vm* machine, CallFrame &frame, uint8_t *&ip);
+static void handleHalt(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleConst(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleAdd(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleSub(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleMul(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleDiv(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleCompare(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleJumpIfFalse(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleJump(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleGetGlobal(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleSetGlobal(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleGetLocal(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleSetLocal(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleLogicalNot(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleLogicalAnd(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleLogicalOr(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleJumpIfFalseOrPop(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleJumpIfTrueOrPop(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleDup(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleCall(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleReturn(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleArray(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleArrayGet(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleArraySet(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+static void handleNil(vm *machine, CallFrame &frame, uint8_t *&ip);
+
+/*static void handlePrint(vm *machine, CallFrame &frame, uint8_t *&ip);*/
+
 // Create the handlers table
 // Make sure every opcode from your OpCode.h is assigned here in the correct order.
 static InstructionHandler handlers[0xFF + 1] = {
@@ -69,7 +94,7 @@ static InstructionHandler handlers[0xFF + 1] = {
     handleArray,
     handleArrayGet,
     handleArraySet,
-    handlePrint
+    /*handlePrint*/
 };
 
 
@@ -103,12 +128,14 @@ public:
 
     EvaluationValue exec(const std::string &program) {
 
+        stack.clear();
+
         std::shared_ptr<Exp> ast = _parser->parse(program);
         co = _bytecodeGenerator->compile(*ast);
 
 
         // Добавить глобальные функции как переменные
-        for (const auto& builtin : global->builtinFunctions) {
+        for (const auto &builtin: global->builtinFunctions) {
             defineBuiltin(builtin.first);
         }
 
@@ -118,10 +145,10 @@ public:
         // Initialize the instruction pointer in the main call frame
         CallFrame &currentFrame = callStack.back();
         currentFrame.ip = currentFrame.co->code.data();
-        sp = stack.begin();
+        /*sp = stack.begin();*/
 
         // Optionally, disassemble bytecode for debugging
-         /*_bytecodeGenerator->disassembleBytecode();*/
+        /*_bytecodeGenerator->disassembleBytecode();*/
 
         return evalExp();
     }
@@ -175,7 +202,7 @@ public:
 
         // After the main loop, return top of stack or NIL
         // This depends on your original design
-        if (sp == stack.begin()) {
+        if (stack.empty()) {
             return NIL();
         }
         return pop();
@@ -208,11 +235,7 @@ public:
 
 
     void push(const EvaluationValue &value) {
-        if (static_cast<size_t>(sp - stack.begin()) == STACK_LIMIT) {
-            throw std::runtime_error("Stack overflow.");
-        }
-        *sp = value;
-        sp++;
+        stack.push_back(value);
     }
 
     uint16_t READ_SHORT(uint8_t *&ip) {
@@ -222,18 +245,19 @@ public:
     }
 
     EvaluationValue pop() {
-        if (sp == stack.begin()) {
+        if (stack.empty()) {
             throw std::runtime_error("Stack empty.");
         }
-        sp--;
-        return *sp;
+        EvaluationValue val = stack.back();
+        stack.pop_back();
+        return val;
     }
 
     EvaluationValue peek() {
-        if (sp == stack.begin()) {
+        if (stack.empty()) {
             throw std::runtime_error("Stack empty.");
         }
-        return *(sp - 1);
+        return stack.back();
     }
 
     uint8_t READ_BYTE(uint8_t *&ip) {
@@ -245,9 +269,9 @@ public:
     }
 
     void initializeBuiltins() {
-        for (const auto& [name, func] : global->builtinFunctions) {
+        for (const auto &[name, func]: global->builtinFunctions) {
             // Создание CodeObject для встроенной функции
-            CodeObject* codeObj = new CodeObject(name);
+            CodeObject *codeObj = new CodeObject(name);
             builtins[name] = codeObj;
 
             // Добавление в глобальные переменные
@@ -260,13 +284,13 @@ public:
         }
     }
 
-    void defineBuiltin(const std::string& name) {
+    void defineBuiltin(const std::string &name) {
         int globalIdx = global->getGlobalIndex(name);
         if (globalIdx == -1) {
             throw std::runtime_error("Не удалось определить встроенную функцию: " + name);
         }
         // Привязка CodeObject к встроенной функции
-        CodeObject* codeObj = builtins[name];
+        CodeObject *codeObj = builtins[name];
         global->globals[globalIdx].value = ALLOC_CODE(name);
         AS_CODE(global->globals[globalIdx].value)->name = name;
         AS_CODE(global->globals[globalIdx].value)->constants.push_back(NUMBER(0)); // Placeholder
@@ -278,8 +302,11 @@ public:
     std::shared_ptr<Global> global;
 
     //Stack pointer
-    std::array<EvaluationValue, STACK_LIMIT> stack;
-    std::array<EvaluationValue, STACK_LIMIT>::iterator sp = stack.begin();
+    /*std::array<EvaluationValue, STACK_LIMIT> stack;
+    std::array<EvaluationValue, STACK_LIMIT>::iterator sp = stack.begin();*/
+
+    std::vector<EvaluationValue> stack;
+
 
     std::unique_ptr<syntax::parser> _parser;
 
@@ -290,7 +317,7 @@ public:
 
     std::unique_ptr<bytecodeGenerator> _bytecodeGenerator;
 
-    std::unordered_map<std::string, CodeObject*> builtins;
+    std::unordered_map<std::string, CodeObject *> builtins;
 };
 
 
@@ -301,7 +328,7 @@ public:
 static void verifyHandlers() {
     for (int i = 0; i <= 0xFF; i++) {
         if (handlers[i] == nullptr) {
-            handlers[i] = [](vm*, CallFrame&, uint8_t *&) {
+            handlers[i] = [](vm *, CallFrame &, uint8_t *&) {
                 throw std::runtime_error("No handler implemented for this opcode");
             };
         }
@@ -310,7 +337,7 @@ static void verifyHandlers() {
 
 // Call this before running evalExp() to ensure no null handlers remain
 // In this example, we do it right after defining them
-static bool handlersInitialized = [](){
+static bool handlersInitialized = []() {
     verifyHandlers();
     return true;
 }();
@@ -318,7 +345,7 @@ static bool handlersInitialized = [](){
 
 // ====================== Handler Implementations ======================
 
-static void handleHalt(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleHalt(vm *machine, CallFrame &frame, uint8_t *&ip) {
     // Return top of stack or NIL if empty, and end execution
     EvaluationValue result = IS_NIL(machine->peek()) ? NIL() : machine->pop();
     // Clear call stack to end execution
@@ -327,12 +354,12 @@ static void handleHalt(vm* machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(result);
 }
 
-static void handleConst(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleConst(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint8_t constIndex = *ip++;
     machine->push(frame.co->constants[constIndex]);
 }
 
-static void handleAdd(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleAdd(vm *machine, CallFrame &frame, uint8_t *&ip) {
     auto right = machine->pop();
     auto left = machine->pop();
     if (IS_NUMBER(left) && IS_NUMBER(right)) {
@@ -344,19 +371,19 @@ static void handleAdd(vm* machine, CallFrame &frame, uint8_t *&ip) {
     }
 }
 
-static void handleSub(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleSub(vm *machine, CallFrame &frame, uint8_t *&ip) {
     auto right = machine->pop();
     auto left = machine->pop();
     machine->push(NUMBER(AS_NUMBER(left) - AS_NUMBER(right)));
 }
 
-static void handleMul(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleMul(vm *machine, CallFrame &frame, uint8_t *&ip) {
     auto right = machine->pop();
     auto left = machine->pop();
     machine->push(NUMBER(AS_NUMBER(left) * AS_NUMBER(right)));
 }
 
-static void handleDiv(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleDiv(vm *machine, CallFrame &frame, uint8_t *&ip) {
     auto right = machine->pop();
     auto left = machine->pop();
     double casted_left = AS_NUMBER(left);
@@ -367,7 +394,7 @@ static void handleDiv(vm* machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(NUMBER(casted_left / casted_right));
 }
 
-static void handleCompare(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleCompare(vm *machine, CallFrame &frame, uint8_t *&ip) {
     auto compareOp = *ip++;
     auto right = machine->pop();
     auto left = machine->pop();
@@ -375,12 +402,18 @@ static void handleCompare(vm* machine, CallFrame &frame, uint8_t *&ip) {
     auto compare_values = [&](auto casted_left, auto casted_right) {
         bool res = false;
         switch (compareOp) {
-            case 0: res = (casted_left < casted_right); break;
-            case 1: res = (casted_left > casted_right); break;
-            case 2: res = (casted_left == casted_right); break;
-            case 3: res = (casted_left >= casted_right); break;
-            case 4: res = (casted_left <= casted_right); break;
-            case 5: res = (casted_left != casted_right); break;
+            case 0: res = (casted_left < casted_right);
+                break;
+            case 1: res = (casted_left > casted_right);
+                break;
+            case 2: res = (casted_left == casted_right);
+                break;
+            case 3: res = (casted_left >= casted_right);
+                break;
+            case 4: res = (casted_left <= casted_right);
+                break;
+            case 5: res = (casted_left != casted_right);
+                break;
             default:
                 throw std::runtime_error("Unknown compare operation.");
         }
@@ -396,7 +429,7 @@ static void handleCompare(vm* machine, CallFrame &frame, uint8_t *&ip) {
     }
 }
 
-static void handleJumpIfFalse(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleJumpIfFalse(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint16_t addr = (ip[0] << 8) | ip[1];
     ip += 2;
     EvaluationValue condition = machine->pop();
@@ -405,51 +438,51 @@ static void handleJumpIfFalse(vm* machine, CallFrame &frame, uint8_t *&ip) {
     }
 }
 
-static void handleJump(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleJump(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint16_t addr = (ip[0] << 8) | ip[1];
     ip += 2;
     ip = &frame.co->code[addr];
 }
 
-static void handleGetGlobal(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleGetGlobal(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint8_t globalIndex = *ip++;
     machine->push(machine->global->get(globalIndex).value);
 }
 
-static void handleSetGlobal(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleSetGlobal(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint8_t globalIndex = *ip++;
     EvaluationValue val = machine->pop();
     machine->global->set(globalIndex, val);
 }
 
-static void handleGetLocal(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleGetLocal(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint8_t slot = *ip++;
     machine->push(frame.locals[slot]);
 }
 
-static void handleSetLocal(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleSetLocal(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint8_t slot = *ip++;
     frame.locals[slot] = machine->pop();
 }
 
-static void handleLogicalNot(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleLogicalNot(vm *machine, CallFrame &frame, uint8_t *&ip) {
     auto operand = machine->pop();
     bool result = !machine->isTruth(operand);
     machine->push(BOOLEAN(result));
 }
 
-static void handleLogicalAnd(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleLogicalAnd(vm *machine, CallFrame &frame, uint8_t *&ip) {
     // If desired, implement logical AND short-circuiting if needed
     // For now, throw if not implemented
     throw std::runtime_error("OP_LOGICAL_AND not implemented in handlers");
 }
 
-static void handleLogicalOr(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleLogicalOr(vm *machine, CallFrame &frame, uint8_t *&ip) {
     // If desired, implement logical OR short-circuiting if needed
     throw std::runtime_error("OP_LOGICAL_OR not implemented in handlers");
 }
 
-static void handleJumpIfFalseOrPop(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleJumpIfFalseOrPop(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint16_t address = (ip[0] << 8) | ip[1];
     ip += 2;
     auto value = machine->peek();
@@ -461,7 +494,7 @@ static void handleJumpIfFalseOrPop(vm* machine, CallFrame &frame, uint8_t *&ip) 
     }
 }
 
-static void handleJumpIfTrueOrPop(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleJumpIfTrueOrPop(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint16_t address = (ip[0] << 8) | ip[1];
     ip += 2;
     auto value = machine->peek();
@@ -473,12 +506,12 @@ static void handleJumpIfTrueOrPop(vm* machine, CallFrame &frame, uint8_t *&ip) {
     }
 }
 
-static void handleDup(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleDup(vm *machine, CallFrame &frame, uint8_t *&ip) {
     EvaluationValue value = machine->peek();
     machine->push(value);
 }
 
-static void handleCall(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleCall(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint8_t argCount = *ip++;
 
     std::vector<EvaluationValue> args(argCount);
@@ -491,12 +524,12 @@ static void handleCall(vm* machine, CallFrame &frame, uint8_t *&ip) {
         throw std::runtime_error("Attempting to call a non-function.");
     }
 
-    CodeObject* functionCo = AS_CODE(funcVal);
+    CodeObject *functionCo = AS_CODE(funcVal);
 
     // Проверка, является ли функция встроенной
     bool isBuiltin = false;
     std::string builtinName;
-    for (const auto& [name, codeObj] : machine->builtins) {
+    for (const auto &[name, codeObj]: machine->builtins) {
         if (name == functionCo->name) {
             isBuiltin = true;
             builtinName = name;
@@ -508,8 +541,7 @@ static void handleCall(vm* machine, CallFrame &frame, uint8_t *&ip) {
         // Вызов встроенной функции через Global
         EvaluationValue result = machine->global->callBuiltin(builtinName, args);
         machine->push(result);
-    }
-    else {
+    } else {
         // Вызов пользовательской функции
         // Создание нового фрейма вызова
         CallFrame newFrame(functionCo);
@@ -527,7 +559,7 @@ static void handleCall(vm* machine, CallFrame &frame, uint8_t *&ip) {
     }
 }
 
-static void handleReturn(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleReturn(vm *machine, CallFrame &frame, uint8_t *&ip) {
     EvaluationValue returnValue = machine->pop();
     machine->callStack.pop_back();
 
@@ -541,24 +573,24 @@ static void handleReturn(vm* machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(returnValue);
 }
 
-static void handleArray(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleArray(vm *machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(ALLOC_ARRAY());
 }
 
-static void handleArrayGet(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleArrayGet(vm *machine, CallFrame &frame, uint8_t *&ip) {
     EvaluationValue indexVal = machine->pop();
     EvaluationValue arrayVal = machine->pop();
 
     if (!IS_ARRAY(arrayVal)) {
         throw std::runtime_error("Attempting to index a non-array.");
     }
-    ArrayObject* array = AS_ARRAY(arrayVal);
+    ArrayObject *array = AS_ARRAY(arrayVal);
 
     if (!IS_NUMBER(indexVal)) {
         throw std::runtime_error("Array index must be a number.");
     }
 
-    size_t index = (size_t)AS_NUMBER(indexVal);
+    size_t index = (size_t) AS_NUMBER(indexVal);
     if (index >= array->elements.size()) {
         throw std::runtime_error("Array index out of bounds.");
     }
@@ -566,7 +598,7 @@ static void handleArrayGet(vm* machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(array->elements[index]);
 }
 
-static void handleArraySet(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleArraySet(vm *machine, CallFrame &frame, uint8_t *&ip) {
     EvaluationValue value = machine->pop();
     EvaluationValue indexVal = machine->pop();
     EvaluationValue arrayVal = machine->pop();
@@ -574,27 +606,26 @@ static void handleArraySet(vm* machine, CallFrame &frame, uint8_t *&ip) {
     if (!IS_ARRAY(arrayVal)) {
         throw std::runtime_error("Attempting to index a non-array.");
     }
-    ArrayObject* array = AS_ARRAY(arrayVal);
+    ArrayObject *array = AS_ARRAY(arrayVal);
 
     if (!IS_NUMBER(indexVal)) {
         throw std::runtime_error("Array index must be a number.");
     }
 
-    size_t index = (size_t)AS_NUMBER(indexVal);
+    size_t index = (size_t) AS_NUMBER(indexVal);
     if (index >= array->elements.size()) {
         array->elements.resize(index + 1, NIL());
     }
     array->elements[index] = value;
 }
 
-static void handleNil(vm* machine, CallFrame &frame, uint8_t *&ip) {
+static void handleNil(vm *machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(NIL());
 }
 
-static void handlePrint(vm* machine, CallFrame &frame, uint8_t *&ip) {
-
+/*static void handlePrint(vm *machine, CallFrame &frame, uint8_t *&ip) {
     EvaluationValue val = machine->peek();
 
     std::string output = evaluationValueToConstantString(val);
     std::cout << output << std::endl;
-}
+}*/
