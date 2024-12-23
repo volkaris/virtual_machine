@@ -25,7 +25,7 @@ public :
         emit(OP_HALT);
 
 
-        optimizeBytecode(co);
+        // optimizeBytecode(co);
 
         return co;
     }
@@ -465,6 +465,35 @@ public :
 
     void disassembleBytecode() { disassembler->disassemble(co); }
 
+    CodeObject* optimizeBytecode(CodeObject* originalCo) {
+        /*std::cout << "До оптимизации\n";
+        disassembler->disassemble(co);*/
+
+        // Константная свёртка
+        // foldConstants(co);
+
+
+        // Устранение избыточных загрузок/сохранений
+        // eliminateRedundantLoadsAndStores(co);
+
+
+//        std::cout << "После оптимизации\n";
+//        disassembler->disassemble(co);
+        // Создаем копию исходного CodeObject
+        CodeObject* optimizedCo = new CodeObject(originalCo->name + "_optimized");
+        optimizedCo->constants = originalCo->constants;
+        optimizedCo->code = originalCo->code;
+        optimizedCo->localNames = originalCo->localNames;
+
+        // Применяем оптимизации
+        foldConstants(optimizedCo);
+        eliminateRedundantLoadsAndStores(optimizedCo);
+
+        // Возвращаем оптимизированный CodeObject
+        return optimizedCo;
+    }
+
+
 private:
     std::shared_ptr<Global> global;
 
@@ -526,23 +555,6 @@ private:
         val.type = EvaluationValueType::OBJECT;
         val.value = (Object*)codeObject;
         return val;
-    }
-
-    void optimizeBytecode(CodeObject *co) {
-
-        /*std::cout << "До оптимизации\n";
-        disassembler->disassemble(co);*/
-
-        // Константная свёртка
-        foldConstants(co);
-
-
-        // Устранение избыточных загрузок/сохранений
-        eliminateRedundantLoadsAndStores(co);
-
-
-        /*std::cout << "После оптимизации\n";
-        disassembler->disassemble(co);*/
     }
 
     void foldConstants(CodeObject* co) {
