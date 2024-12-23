@@ -318,6 +318,8 @@ public:
     std::unique_ptr<bytecodeGenerator> _bytecodeGenerator;
 
     std::unordered_map<std::string, CodeObject *> builtins;
+
+    std::unordered_map<CodeObject*, CodeObject*> jitCache;
 };
 
 
@@ -514,39 +516,55 @@ static void handleDup(vm *machine, CallFrame &frame, uint8_t *&ip) {
 static void handleCall(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint8_t argCount = *ip++;
 
+    // 1) Считываем аргументы со стека
     std::vector<EvaluationValue> args(argCount);
     for (int i = argCount - 1; i >= 0; --i) {
         args[i] = machine->pop();
     }
 
+    // 2) Снимаем со стека саму функцию
     EvaluationValue funcVal = machine->pop();
     if (!IS_OBJECT(funcVal) || !IS_CODE(funcVal)) {
         throw std::runtime_error("Attempting to call a non-function.");
     }
+    CodeObject *originalFunctionCo = AS_CODE(funcVal);
 
-    CodeObject *functionCo = AS_CODE(funcVal);
-
-    // Проверка, является ли функция встроенной
+    // 3) Проверяем, не является ли это встроенной функцией
     bool isBuiltin = false;
     std::string builtinName;
     for (const auto &[name, codeObj]: machine->builtins) {
-        if (name == functionCo->name) {
+        if (name == originalFunctionCo->name) {
             isBuiltin = true;
             builtinName = name;
             break;
         }
     }
 
+    CodeObject *functionCo = originalFunctionCo;
+
+    if (!isBuiltin) {
+        // 4b) Если НЕ встроенная функция, проверяем, оптимизировалась ли она ранее
+        auto it = machine->jitCache.find(originalFunctionCo);
+        if (it != machine->jitCache.end()) {
+            // Есть в кэше -> берем оптимизированный код
+            functionCo = it->second;
+        } else {
+            // Нет в кэше -> оптимизируем и добавляем в кэш
+            CodeObject* optimizedCo = machine->_bytecodeGenerator->optimizeBytecode(originalFunctionCo);
+            machine->jitCache[originalFunctionCo] = optimizedCo;
+            functionCo = optimizedCo;
+        }
+    }
+
     if (isBuiltin) {
-        // Вызов встроенной функции через Global
+        // 4a) Если встроенная, вызываем её, никакой JIT-оптимизации не нужно
         EvaluationValue result = machine->global->callBuiltin(builtinName, args);
         machine->push(result);
     } else {
-        // Вызов пользовательской функции
-        // Создание нового фрейма вызова
+        // 5) Создаём фрейм вызова пользовательской функции
         CallFrame newFrame(functionCo);
 
-        // Установка локальных переменных (параметров)
+        // 6) Установка локальных переменных (параметров)
         for (size_t i = 0; i < args.size(); ++i) {
             int slot = i;
             if (slot >= functionCo->localNames.size()) {
@@ -555,9 +573,12 @@ static void handleCall(vm *machine, CallFrame &frame, uint8_t *&ip) {
             newFrame.locals[slot] = args[i];
         }
 
+        // 7) Добавляем фрейм в стек вызовов
         machine->callStack.push_back(newFrame);
     }
 }
+
+
 
 static void handleReturn(vm *machine, CallFrame &frame, uint8_t *&ip) {
     EvaluationValue returnValue = machine->pop();
