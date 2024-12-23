@@ -10,7 +10,7 @@
 class bytecodeGenerator {
 public :
     explicit bytecodeGenerator(const std::shared_ptr<Global> &global)
-        : global(global), disassembler(std::make_unique<Disassembler>(global)), co(nullptr) {
+            : global(global), disassembler(std::make_unique<Disassembler>(global)), co(nullptr) {
     }
 
     CodeObject *compile(const Exp &exp) {
@@ -276,7 +276,7 @@ public :
 
                 // Прыжок в начало цикла
                 emit(OP_JUMP);
-                emit16((uint16_t)loopStart);
+                emit16((uint16_t) loopStart);
 
                 // Обратная замена адреса выхода из цикла
                 size_t loopEnd = co->code.size();
@@ -312,7 +312,7 @@ public :
 
                     // Прыжок в начало
                     emit(OP_JUMP);
-                    emit16((uint16_t)loopStart);
+                    emit16((uint16_t) loopStart);
 
                     // Обратная замена адреса выхода
                     size_t loopEnd = co->code.size();
@@ -346,7 +346,7 @@ public :
 
                 // Вставка OP_CONST с индексом функции
                 emit(OP_CONST);
-                emit((uint8_t)functionConstIdx);
+                emit((uint8_t) functionConstIdx);
 
 
                 if (!global->exists(functionName)) {
@@ -356,7 +356,7 @@ public :
 
                 // OP_SET_GLOBAL для присвоения имени функции
                 emit(OP_SET_GLOBAL);
-                emit((uint8_t)globalIdx);
+                emit((uint8_t) globalIdx);
 
                 // Переключение на functionCo
                 CodeObject *previousCo = co;
@@ -367,7 +367,7 @@ public :
                 localCount = 0;
 
                 // Параметры как локальные переменные
-                for (const auto& param : params) {
+                for (const auto &param: params) {
                     scopeStack.back()[param] = localCount;
                     co->localNames[localCount] = param;
                     localCount++;
@@ -396,16 +396,16 @@ public :
 
                 // Загрузка функции
                 emit(OP_GET_GLOBAL);
-                emit((uint8_t)functionIdx);
+                emit((uint8_t) functionIdx);
 
                 // Генерация аргументов
-                for (const auto& arg : exp.callArguments) {
+                for (const auto &arg: exp.callArguments) {
                     generate(*arg);
                 }
 
 
                 emit(OP_CALL);
-                emit((uint8_t)exp.callArguments.size());
+                emit((uint8_t) exp.callArguments.size());
 
                 break;
             }
@@ -431,7 +431,7 @@ public :
                     emit(OP_DUP);
 
                     emit(OP_CONST);
-                    emit(numericConstIdx((double)i));
+                    emit(numericConstIdx((double) i));
 
                     generate(*exp.callArguments[i]);
 
@@ -449,14 +449,14 @@ public :
                 break;
             }
 
-            /*case ExpType::PRINT_STATEMENT: {
+                /*case ExpType::PRINT_STATEMENT: {
 
-                generate(*exp.varValue);
+                    generate(*exp.varValue);
 
 
-                emit(OP_PRINT);
-                break;
-            }*/
+                    emit(OP_PRINT);
+                    break;
+                }*/
 
 
 
@@ -465,31 +465,22 @@ public :
 
     void disassembleBytecode() { disassembler->disassemble(co); }
 
-    CodeObject* optimizeBytecode(CodeObject* originalCo) {
-        /*std::cout << "До оптимизации\n";
-        disassembler->disassemble(co);*/
-
-        // Константная свёртка
-        // foldConstants(co);
-
-
-        // Устранение избыточных загрузок/сохранений
-        // eliminateRedundantLoadsAndStores(co);
-
-
-//        std::cout << "После оптимизации\n";
-//        disassembler->disassemble(co);
-        // Создаем копию исходного CodeObject
-        CodeObject* optimizedCo = new CodeObject(originalCo->name + "_optimized");
+    CodeObject *optimizeBytecode(CodeObject *originalCo) {
+        CodeObject *optimizedCo = new CodeObject(originalCo->name + "_optimized");
         optimizedCo->constants = originalCo->constants;
         optimizedCo->code = originalCo->code;
         optimizedCo->localNames = originalCo->localNames;
 
+//        std::cout << "before optimization:\n";
+//        disassembler->disassemble(originalCo);
+
         // Применяем оптимизации
-        foldConstants(optimizedCo);
+        eliminateUnreachableCode(optimizedCo);
         eliminateRedundantLoadsAndStores(optimizedCo);
 
-        // Возвращаем оптимизированный CodeObject
+//        std::cout << "after optimization:\n";
+//        disassembler->disassemble(optimizedCo);
+
         return optimizedCo;
     }
 
@@ -541,210 +532,103 @@ private:
     }
 
     void emit16(uint16_t value) {
-        emit((uint8_t)((value >> 8) & 0xFF));
-        emit((uint8_t)(value & 0xFF));
+        emit((uint8_t) ((value >> 8) & 0xFF));
+        emit((uint8_t) (value & 0xFF));
     }
 
     void patchAddress(size_t addrPos, uint16_t value) {
-        co->code[addrPos] = (uint8_t)((value >> 8) & 0xFF);
-        co->code[addrPos + 1] = (uint8_t)(value & 0xFF);
+        co->code[addrPos] = (uint8_t) ((value >> 8) & 0xFF);
+        co->code[addrPos + 1] = (uint8_t) (value & 0xFF);
     }
 
-    inline EvaluationValue ALLOC_CODE_OBJECT(CodeObject* codeObject) {
+    inline EvaluationValue ALLOC_CODE_OBJECT(CodeObject *codeObject) {
         EvaluationValue val;
         val.type = EvaluationValueType::OBJECT;
-        val.value = (Object*)codeObject;
+        val.value = (Object *) codeObject;
         return val;
     }
 
-    void foldConstants(CodeObject* co) {
-    std::vector<uint8_t>& code = co->code;
-    bool changed = true;
-
-    // Helper lambda to determine instruction length
-    auto getInstructionLength = [&](uint8_t opcode) -> size_t {
-        switch (opcode) {
-            case OP_CONST:
-            case OP_GET_LOCAL:
-            case OP_SET_LOCAL:
-            case OP_GET_GLOBAL:
-            case OP_SET_GLOBAL:
-            case OP_LOGICAL_NOT:
-            case OP_JUMP_IF_FALSE_OR_POP:
-            case OP_JUMP_IF_TRUE_OR_POP:
-            case OP_DUP:
-            case OP_CALL:
-                return 2; // Opcode + operand
-            case OP_JUMP_IF_FALSE:
-            case OP_JUMP:
-                return 3; // Opcode + 2-byte operand
-            case OP_ADD:
-            case OP_SUB:
-            case OP_MUL:
-            case OP_DIV:
-            case OP_COMPARE:
-            case OP_ARRAY:
-            case OP_ARRAY_GET:
-            case OP_ARRAY_SET:
-            /*case OP_PRINT:*/
-            case OP_NIL:
-            case OP_HALT:
-            case OP_RETURN:
-                return 1; // Single-byte opcode
-            default:
-                throw std::runtime_error("Unknown opcode encountered in foldConstants: " + std::to_string(opcode));
-        }
-    };
-
-    while (changed) {
-        changed = false;
+    void eliminateUnreachableCode(CodeObject *co) {
+        std::vector<uint8_t> &code = co->code;
+        std::vector<uint8_t> optimizedCode;
         size_t i = 0;
-        while (i + 4 < code.size()) { // Need at least 5 bytes for the pattern
-            uint8_t opcode1 = code[i];
-            size_t len1;
-            try {
-                len1 = getInstructionLength(opcode1);
-            } catch (const std::runtime_error& e) {
-                std::cerr << e.what() << std::endl;
-                break; // Stop folding on unknown opcode
+
+        while (i < code.size()) {
+            uint8_t opcode = code[i];
+            optimizedCode.emplace_back(opcode);
+            size_t instrLen = 1;
+
+            // Определяем длину текущей инструкции
+            switch (opcode) {
+                case OP_JUMP:
+                case OP_JUMP_IF_FALSE:
+                case OP_JUMP_IF_FALSE_OR_POP:
+                case OP_JUMP_IF_TRUE_OR_POP:
+                    if (i + 2 >= code.size()) {
+                        throw std::runtime_error("Invalid jump instruction length in eliminateUnreachableCode.");
+                    }
+                    instrLen = 3;
+                    for (int j = 1; j < instrLen; ++j) {
+                        optimizedCode.emplace_back(code[i + j]);
+                    }
+                    break;
+                case OP_CONST:
+                case OP_GET_LOCAL:
+                case OP_SET_LOCAL:
+                case OP_GET_GLOBAL:
+                case OP_SET_GLOBAL:
+                case OP_LOGICAL_NOT:
+                case OP_DUP:
+                case OP_CALL:
+                    instrLen = 2;
+                    if (i + 1 >= code.size()) {
+                        throw std::runtime_error("Invalid instruction length in eliminateUnreachableCode.");
+                    }
+                    optimizedCode.emplace_back(code[i + 1]);
+                    break;
+                case OP_ADD:
+                case OP_SUB:
+                case OP_MUL:
+                case OP_DIV:
+                case OP_COMPARE:
+                case OP_ARRAY:
+                case OP_ARRAY_GET:
+                case OP_ARRAY_SET:
+                case OP_NIL:
+                case OP_HALT:
+                case OP_RETURN:
+                    instrLen = 1;
+                    break;
+                default:
+                    throw std::runtime_error(
+                            "Unknown opcode encountered in eliminateUnreachableCode: " + std::to_string(opcode));
             }
 
-            // Check if the first instruction is OP_CONST
-            if (opcode1 == OP_CONST && (i + len1 + 3 < code.size())) { // Ensure enough bytes for the pattern
-                uint8_t cIndex1 = code[i + 1];
-
-                // Next instruction should be OP_CONST
-                uint8_t opcode2 = code[i + len1];
-                if (opcode2 == OP_CONST) {
-                    size_t len2;
-                    try {
-                        len2 = getInstructionLength(opcode2);
-                    } catch (const std::runtime_error& e) {
-                        std::cerr << e.what() << std::endl;
-                        break; // Stop folding on unknown opcode
-                    }
-
-                    if (i + len1 + len2 + 1 >= code.size()) {
-                        // Not enough bytes for OP_ADD/OP_SUB etc.
-                        i += len1;
-                        continue;
-                    }
-
-                    uint8_t cIndex2 = code[i + len1 + 1];
-                    uint8_t opcode3 = code[i + len1 + len2];
-
-                    // Check if the third instruction is an arithmetic operation
-                    if (opcode3 == OP_ADD || opcode3 == OP_SUB ||
-                        opcode3 == OP_MUL || opcode3 == OP_DIV) {
-
-                        // Debugging: Print the current pattern being analyzed
-                        /*std::cout << "Attempting to fold constants at offset " << i
-                                  << " with indices " << static_cast<int>(cIndex1)
-                                  << " and " << static_cast<int>(cIndex2) << std::endl;*/
-
-                        // Ensure constant indexes are within bounds
-                        if (cIndex1 >= co->constants.size() || cIndex2 >= co->constants.size()) {
-                            std::cerr << "Error: Constant index out of bounds during foldConstants. "
-                                      << "cIndex1=" << static_cast<int>(cIndex1)
-                                      << ", cIndex2=" << static_cast<int>(cIndex2)
-                                      << ", constants.size()=" << co->constants.size() << std::endl;
-                            // Skip this pattern as it is invalid
-                            i += len1;
-                            continue;
-                        }
-
-                        // Ensure both constants are numbers
-                        if (IS_NUMBER(co->constants[cIndex1]) && IS_NUMBER(co->constants[cIndex2])) {
-                            double leftVal = AS_NUMBER(co->constants[cIndex1]);
-                            double rightVal = AS_NUMBER(co->constants[cIndex2]);
-                            double result;
-
-                            // Perform the arithmetic operation
-                            switch (opcode3) {
-                                case OP_ADD:
-                                    result = leftVal + rightVal;
-                                    break;
-                                case OP_SUB:
-                                    result = leftVal - rightVal;
-                                    break;
-                                case OP_MUL:
-                                    result = leftVal * rightVal;
-                                    break;
-                                case OP_DIV:
-                                    if (rightVal == 0) {
-                                        std::cerr << "Error: Division by zero during foldConstants." << std::endl;
-                                        i += len1 + len2;
-                                        continue;
-                                    }
-                                    result = leftVal / rightVal;
-                                    break;
-                                default:
-                                    // This case should not occur due to the initial check
-                                    i += len1 + len2;
-                                    continue;
-                            }
-
-                            // Add or retrieve the folded constant
-                            size_t newIndex = numericConstIdx(result);
-
-                            // Replace the sequence with a single OP_CONST newIndex
-                            code[i] = OP_CONST;
-                            code[i + 1] = static_cast<uint8_t>(newIndex);
-                            // Remove OP_CONST c2 and the arithmetic operation
-                            code.erase(code.begin() + i + 2, code.begin() + i + 2 + len2 + 1); // Remove len2 bytes for OP_CONST and cIndex2, plus 1 byte for opcode3
-
-                            /*
-                            std::cout << "Folded constants into new constant index " << newIndex << std::endl;
-                            */
-
-                            changed = true;
-                            // After modifying the code, restart the loop
-                            break;
-                        } else {
-                            // If constants are not numbers, skip folding
-                            i += len1 + len2;
-                        }
-                    } else {
-                        // Third instruction is not an arithmetic operation, skip
-                        i += len1 + len2;
-                    }
-                } else {
-                    // Second instruction is not OP_CONST, skip
-                    size_t len2;
-                    try {
-                        len2 = getInstructionLength(opcode2);
-                    } catch (const std::runtime_error& e) {
-                        std::cerr << e.what() << std::endl;
-                        break; // Stop folding on unknown opcode
-                    }
-                    i += len2;
-                }
-            } else {
-                // Current instruction is not OP_CONST, skip based on its length
-                size_t instrLen;
-                try {
-                    instrLen = getInstructionLength(opcode1);
-                } catch (const std::runtime_error& e) {
-                    std::cerr << e.what() << std::endl;
-                    break; // Stop folding on unknown opcode
-                }
-                i += instrLen;
+            // Проверяем, является ли текущая инструкция завершением выполнения
+            if (opcode == OP_RETURN || opcode == OP_HALT) {
+                // Любой код после этой инструкции считается недостижимым
+                break;
             }
+
+            i += instrLen;
         }
-    }
-}
 
-    void eliminateRedundantLoadsAndStores(CodeObject* co) {
+        // Устанавливаем оптимизированный байткод
+        co->code = optimizedCode;
+    }
+
+
+    void eliminateRedundantLoadsAndStores(CodeObject *co) {
         // удаление избыточных загрузок/сохранений
-        std::vector<uint8_t>& code = co->code;
+        std::vector<uint8_t> &code = co->code;
         bool changed = true;
 
         while (changed) {
             changed = false;
             for (size_t i = 0; i + 2 < code.size(); i++) {
-                if (code[i] == OP_GET_LOCAL && code[i+2] == OP_SET_LOCAL) {
-                    uint8_t local1 = code[i+1];
-                    uint8_t local2 = code[i+3];
+                if (code[i] == OP_GET_LOCAL && code[i + 2] == OP_SET_LOCAL) {
+                    uint8_t local1 = code[i + 1];
+                    uint8_t local2 = code[i + 3];
                     if (local1 == local2) {
                         // Если сразу после GET_LOCAL x идёт SET_LOCAL x без использования значения,
                         // убираем GET_LOCAL
@@ -757,7 +641,7 @@ private:
         }
     }
 
-    size_t numericConstIdxInFunction(CodeObject* co, double value) {
+    size_t numericConstIdxInFunction(CodeObject *co, double value) {
         for (size_t i = 0; i < co->constants.size(); ++i) {
             if (IS_NUMBER(co->constants[i]) && AS_NUMBER(co->constants[i]) == value) {
                 return i;
@@ -771,5 +655,10 @@ private:
 };
 
 std::map<std::string, uint8_t> bytecodeGenerator::compareOperator = {
-    {"<", 0}, {">", 1}, {"==", 2}, {">=", 3}, {"<=", 4}, {"!=", 5},
+        {"<",  0},
+        {">",  1},
+        {"==", 2},
+        {">=", 3},
+        {"<=", 4},
+        {"!=", 5},
 };
