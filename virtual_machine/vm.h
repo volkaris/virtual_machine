@@ -117,6 +117,7 @@ struct CallFrame {
     }
 };
 
+
 class vm {
 public:
     vm() : global(std::make_shared<Global>()),
@@ -127,31 +128,23 @@ public:
     }
 
     EvaluationValue exec(const std::string &program) {
-
         stack.clear();
-
         std::shared_ptr<Exp> ast = _parser->parse(program);
         co = _bytecodeGenerator->compile(*ast);
 
+        _bytecodeGenerator->disassembleBytecode();
 
-        // Добавить глобальные функции как переменные
         for (const auto &builtin: global->builtinFunctions) {
             defineBuiltin(builtin.first);
         }
 
-        // Initialize the main call frame
         callStack.emplace_back(co);
-
-        // Initialize the instruction pointer in the main call frame
         CallFrame &currentFrame = callStack.back();
         currentFrame.ip = currentFrame.co->code.data();
-        /*sp = stack.begin();*/
-
-        // Optionally, disassemble bytecode for debugging
-        /*_bytecodeGenerator->disassembleBytecode();*/
 
         return evalExp();
     }
+
 
     template<typename T>
     void compare_values(const T &casted_left, const T &casted_right, uint8_t compare_op) {
@@ -243,6 +236,7 @@ public:
         uint16_t low = READ_BYTE(ip);
         return (high << 8) | low;
     }
+
 
     EvaluationValue pop() {
         if (stack.empty()) {

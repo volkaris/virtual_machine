@@ -30,6 +30,23 @@ public :
         return co;
     }
 
+    inline uint16_t readU16(const std::vector<uint8_t>& code, size_t pos) {
+        if (pos + 1 >= code.size()) {
+            throw std::out_of_range("readU16: position out of range");
+        }
+        return (static_cast<uint16_t>(code[pos]) << 8) | static_cast<uint16_t>(code[pos + 1]);
+    }
+
+    inline void writeU16(std::vector<uint8_t>& code, size_t pos, uint16_t value) {
+        if (pos + 1 >= code.size()) {
+            throw std::out_of_range("writeU16: position out of range");
+        }
+        code[pos] = static_cast<uint8_t>((value >> 8) & 0xFF);
+        code[pos + 1] = static_cast<uint8_t>(value & 0xFF);
+    }
+
+
+
     void generate(const Exp &exp) {
         switch (exp.type) {
             case ExpType::NUMBER: {
@@ -465,6 +482,7 @@ public :
 
     void disassembleBytecode() { disassembler->disassemble(co); }
 
+
 private:
     std::shared_ptr<Global> global;
 
@@ -528,22 +546,59 @@ private:
         return val;
     }
 
-    void optimizeBytecode(CodeObject *co) {
-
-        /*std::cout << "До оптимизации\n";
-        disassembler->disassemble(co);*/
-
+    void optimizeBytecode(CodeObject* co) {
         // Константная свёртка
         foldConstants(co);
-
 
         // Устранение избыточных загрузок/сохранений
         eliminateRedundantLoadsAndStores(co);
 
+        // Свёртка циклов
+        foldLoops(co);
 
-        /*std::cout << "После оптимизации\n";
-        disassembler->disassemble(co);*/
+        // Упрощение прыжков
+        simplifyJumps(co);
     }
+
+    void foldLoops(CodeObject* co) {
+        std::vector<uint8_t>& code = co->code;
+        size_t i = 0;
+
+        while (i < code.size()) {
+            if (code[i] == OP_JUMP_IF_FALSE) {
+                try {
+                    uint16_t jumpTarget = readU16(code, i + 1);
+                    if (jumpTarget > i && jumpTarget < code.size()) {
+                        code.erase(code.begin() + i, code.begin() + jumpTarget);
+                    }
+                } catch (std::out_of_range&) {
+                    std::cerr << "Ошибка в foldLoops: выход за пределы массива.\n";
+                }
+            }
+            i++;
+        }
+    }
+
+    void simplifyJumps(CodeObject* co) {
+        std::vector<uint8_t>& code = co->code;
+        size_t i = 0;
+
+        while (i < code.size()) {
+            if (code[i] == OP_JUMP) {
+                try {
+                    uint16_t jumpAddr = readU16(code, i + 1);
+                    while (jumpAddr < code.size() && code[jumpAddr] == OP_JUMP) {
+                        jumpAddr = readU16(code, jumpAddr + 1);
+                    }
+                    writeU16(code, i + 1, jumpAddr);
+                } catch (std::out_of_range&) {
+                    std::cerr << "Ошибка в simplifyJumps: выход за пределы массива.\n";
+                }
+            }
+            i++;
+        }
+    }
+
 
     void foldConstants(CodeObject* co) {
     std::vector<uint8_t>& code = co->code;

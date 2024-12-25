@@ -10,7 +10,7 @@ int main() {
 
     cin >> filePath;
 
-    
+
     std::ifstream file(filePath);
     if (!file.is_open()) {
         std::cerr << "Could not open the file: " << filePath << std::endl;
