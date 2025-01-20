@@ -24,9 +24,6 @@ public :
 
         emit(OP_HALT);
 
-
-        // optimizeBytecode(co);
-
         return co;
     }
 
@@ -448,41 +445,10 @@ public :
                 emit(OP_ARRAY_GET);
                 break;
             }
-
-                /*case ExpType::PRINT_STATEMENT: {
-
-                    generate(*exp.varValue);
-
-
-                    emit(OP_PRINT);
-                    break;
-                }*/
-
-
-
         }
     }
 
     void disassembleBytecode() { disassembler->disassemble(co); }
-
-    CodeObject *optimizeBytecode(CodeObject *originalCo) {
-        CodeObject *optimizedCo = new CodeObject(originalCo->name + "_optimized");
-        optimizedCo->constants = originalCo->constants;
-        optimizedCo->code = originalCo->code;
-        optimizedCo->localNames = originalCo->localNames;
-
-//        std::cout << "before optimization:\n";
-//        disassembler->disassemble(originalCo);
-
-        // Применяем оптимизации
-        eliminateUnreachableCode(optimizedCo);
-        eliminateRedundantLoadsAndStores(optimizedCo);
-
-//        std::cout << "after optimization:\n";
-//        disassembler->disassemble(optimizedCo);
-
-        return optimizedCo;
-    }
 
 
 private:
@@ -548,98 +514,6 @@ private:
         return val;
     }
 
-    void eliminateUnreachableCode(CodeObject *co) {
-        std::vector<uint8_t> &code = co->code;
-        std::vector<uint8_t> optimizedCode;
-        size_t i = 0;
-
-        while (i < code.size()) {
-            uint8_t opcode = code[i];
-            optimizedCode.emplace_back(opcode);
-            size_t instrLen = 1;
-
-            // Определяем длину текущей инструкции
-            switch (opcode) {
-                case OP_JUMP:
-                case OP_JUMP_IF_FALSE:
-                case OP_JUMP_IF_FALSE_OR_POP:
-                case OP_JUMP_IF_TRUE_OR_POP:
-                    if (i + 2 >= code.size()) {
-                        throw std::runtime_error("Invalid jump instruction length in eliminateUnreachableCode.");
-                    }
-                    instrLen = 3;
-                    for (int j = 1; j < instrLen; ++j) {
-                        optimizedCode.emplace_back(code[i + j]);
-                    }
-                    break;
-                case OP_CONST:
-                case OP_GET_LOCAL:
-                case OP_SET_LOCAL:
-                case OP_GET_GLOBAL:
-                case OP_SET_GLOBAL:
-                case OP_LOGICAL_NOT:
-                case OP_DUP:
-                case OP_CALL:
-                    instrLen = 2;
-                    if (i + 1 >= code.size()) {
-                        throw std::runtime_error("Invalid instruction length in eliminateUnreachableCode.");
-                    }
-                    optimizedCode.emplace_back(code[i + 1]);
-                    break;
-                case OP_ADD:
-                case OP_SUB:
-                case OP_MUL:
-                case OP_DIV:
-                case OP_COMPARE:
-                case OP_ARRAY:
-                case OP_ARRAY_GET:
-                case OP_ARRAY_SET:
-                case OP_NIL:
-                case OP_HALT:
-                case OP_RETURN:
-                    instrLen = 1;
-                    break;
-                default:
-                    throw std::runtime_error(
-                            "Unknown opcode encountered in eliminateUnreachableCode: " + std::to_string(opcode));
-            }
-
-            // Проверяем, является ли текущая инструкция завершением выполнения
-            if (opcode == OP_RETURN || opcode == OP_HALT) {
-                // Любой код после этой инструкции считается недостижимым
-                break;
-            }
-
-            i += instrLen;
-        }
-
-        // Устанавливаем оптимизированный байткод
-        co->code = optimizedCode;
-    }
-
-
-    void eliminateRedundantLoadsAndStores(CodeObject *co) {
-        // удаление избыточных загрузок/сохранений
-        std::vector<uint8_t> &code = co->code;
-        bool changed = true;
-
-        while (changed) {
-            changed = false;
-            for (size_t i = 0; i + 2 < code.size(); i++) {
-                if (code[i] == OP_GET_LOCAL && code[i + 2] == OP_SET_LOCAL) {
-                    uint8_t local1 = code[i + 1];
-                    uint8_t local2 = code[i + 3];
-                    if (local1 == local2) {
-                        // Если сразу после GET_LOCAL x идёт SET_LOCAL x без использования значения,
-                        // убираем GET_LOCAL
-                        code.erase(code.begin() + i, code.begin() + i + 2);
-                        changed = true;
-                        break;
-                    }
-                }
-            }
-        }
-    }
 
     size_t numericConstIdxInFunction(CodeObject *co, double value) {
         for (size_t i = 0; i < co->constants.size(); ++i) {

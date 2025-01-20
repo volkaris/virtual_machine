@@ -1,5 +1,3 @@
-// Global.h
-
 #pragma once
 
 #include <unordered_map>
@@ -14,7 +12,6 @@ struct GlobalVar {
     EvaluationValue value;
 };
 
-// Forward declaration to avoid circular dependency
 
 struct Global {
     std::vector<GlobalVar> globals;
@@ -60,7 +57,7 @@ struct Global {
     }
 
     void setGlobalVariables() {
-        // Регистрация встроенной функции random
+
         registerBuiltin("random", [this](const std::vector<EvaluationValue> &args) -> EvaluationValue {
             initializeRNG();
 
@@ -72,29 +69,29 @@ struct Global {
                 throw std::runtime_error("Функция random принимает только числовой аргумент.");
             }
             double maxVal = AS_NUMBER(args[0]);
-            double minVal = -maxVal; // Автоматическое задание минимального значения
+            double minVal = -maxVal;
 
             if (minVal > maxVal) {
                 throw std::runtime_error("В функции random min не может быть больше max.");
             }
 
-            // Создание распределения от minVal до maxVal
+
             std::uniform_real_distribution dist(minVal, maxVal);
             int randomValue = dist(rng);
             return NUMBER(randomValue);
         });
 
 
-        // Регистрация встроенной функции print
+
         registerBuiltin("print", [](const std::vector<EvaluationValue>& args) -> EvaluationValue {
             for (const auto& arg : args) {
                 std::cout << evaluationValueToConstantString(arg) << " ";
             }
             std::cout << std::endl;
-            return NIL(); // Функция print ничего не возвращает
+            return NIL();
         });
 
-        // Добавьте другие встроенные функции по мере необходимости
+
     }
 
 

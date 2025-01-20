@@ -3,13 +3,11 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <array>
 #include "parser.h"
 #include "EvaluationValue.h"
 #include "bytecodeGenerator.h"
 #include "Global.h"
 
-#define STACK_LIMIT 80000
 
 struct CallFrame;
 class vm;
@@ -66,10 +64,7 @@ static void handleArraySet(vm *machine, CallFrame &frame, uint8_t *&ip);
 
 static void handleNil(vm *machine, CallFrame &frame, uint8_t *&ip);
 
-/*static void handlePrint(vm *machine, CallFrame &frame, uint8_t *&ip);*/
 
-// Create the handlers table
-// Make sure every opcode from your OpCode.h is assigned here in the correct order.
 static InstructionHandler handlers[0xFF + 1] = {
     handleHalt,
     handleConst,
@@ -94,7 +89,7 @@ static InstructionHandler handlers[0xFF + 1] = {
     handleArray,
     handleArrayGet,
     handleArraySet,
-    /*handlePrint*/
+
 };
 
 
@@ -105,14 +100,13 @@ struct CallFrame {
 
     CallFrame(CodeObject *codeObject)
         : co(codeObject), ip(codeObject->code.data()) {
-        // Determine the maximum slot index
         int maxSlot = -1;
         for (const auto &pair: co->localNames) {
             if (pair.first > maxSlot) {
                 maxSlot = pair.first;
             }
         }
-        // Initialize locals vector with NIL
+
         locals.resize(maxSlot + 1, NIL());
     }
 };
@@ -121,87 +115,52 @@ class vm {
 public:
     vm() : global(std::make_shared<Global>()),
            _parser(std::make_unique<syntax::parser>()),
-           _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)) {
+           _bytecodeGenerator(std::make_unique<bytecodeGenerator>(global)), disassembler(std::make_unique<Disassembler>(global)) {
         setGlobalVariables();
         initializeBuiltins();
     }
 
     EvaluationValue exec(const std::string &program) {
-
         stack.clear();
 
         std::shared_ptr<Exp> ast = _parser->parse(program);
         co = _bytecodeGenerator->compile(*ast);
 
 
-        // Добавить глобальные функции как переменные
         for (const auto &builtin: global->builtinFunctions) {
             defineBuiltin(builtin.first);
         }
 
-        // Initialize the main call frame
+
         callStack.emplace_back(co);
 
-        // Initialize the instruction pointer in the main call frame
+
         CallFrame &currentFrame = callStack.back();
         currentFrame.ip = currentFrame.co->code.data();
-        /*sp = stack.begin();*/
 
-        // Optionally, disassemble bytecode for debugging
+
         /*_bytecodeGenerator->disassembleBytecode();*/
 
         return evalExp();
     }
 
-    template<typename T>
-    void compare_values(const T &casted_left, const T &casted_right, uint8_t compare_op) {
-        bool res = false;
-        switch (compare_op) {
-            case 0:
-                res = casted_left < casted_right;
-                break;
-            case 1:
-                res = casted_left > casted_right;
-                break;
-            case 2:
-                res = casted_left == casted_right;
-                break;
-            case 3:
-                res = casted_left >= casted_right;
-                break;
-            case 4:
-                res = casted_left <= casted_right;
-                break;
-            case 5:
-                res = casted_left != casted_right;
-                break;
-            default: {
-                throw std::runtime_error("Unknown compare operation." + std::to_string(compare_op));
-            }
-        }
-        push(BOOLEAN(res));
-    }
 
     EvaluationValue evalExp() {
         while (!callStack.empty()) {
             CallFrame &currentFrame = callStack.back();
             uint8_t *&ip = currentFrame.ip;
 
-            // Instead of switch:
-            // auto op_code = READ_BYTE(ip);
-            // switch(op_code) { ... }
 
             uint8_t op_code = *ip++;
             handlers[op_code](this, currentFrame, ip);
 
-            // If callStack was cleared by handleHalt or OP_RETURN logic ended execution, break out
+
             if (callStack.empty()) {
                 break;
             }
         }
 
-        // After the main loop, return top of stack or NIL
-        // This depends on your original design
+
         if (stack.empty()) {
             return NIL();
         }
@@ -296,21 +255,129 @@ public:
         AS_CODE(global->globals[globalIdx].value)->constants.push_back(NUMBER(0)); // Placeholder
     }
 
+    CodeObject *optimizeBytecode(CodeObject *originalCo) {
+        CodeObject *optimizedCo = new CodeObject(originalCo->name + "_optimized");
+        optimizedCo->constants = originalCo->constants;
+        optimizedCo->code = originalCo->code;
+        optimizedCo->localNames = originalCo->localNames;
+
+        /*std::cout << "before optimization:\n";
+        disassembler->disassemble(originalCo);*/
+
+
+        eliminateUnreachableCode(optimizedCo);
+        eliminateRedundantLoadsAndStores(optimizedCo);
+
+        /*std::cout << "after optimization:\n";
+        disassembler->disassemble(optimizedCo);*/
+
+        return optimizedCo;
+    }
+
+    void eliminateUnreachableCode(CodeObject *co) {
+        std::vector<uint8_t> &code = co->code;
+        std::vector<uint8_t> optimizedCode;
+        size_t i = 0;
+
+        while (i < code.size()) {
+            uint8_t opcode = code[i];
+            optimizedCode.emplace_back(opcode);
+            size_t instrLen = 1;
+
+            // Определяем длину текущей инструкции
+            switch (opcode) {
+                case OP_JUMP:
+                case OP_JUMP_IF_FALSE:
+                case OP_JUMP_IF_FALSE_OR_POP:
+                case OP_JUMP_IF_TRUE_OR_POP:
+                    if (i + 2 >= code.size()) {
+                        throw std::runtime_error("Invalid jump instruction length in eliminateUnreachableCode.");
+                    }
+                    instrLen = 3;
+                    for (int j = 1; j < instrLen; ++j) {
+                        optimizedCode.emplace_back(code[i + j]);
+                    }
+                    break;
+                case OP_CONST:
+                case OP_GET_LOCAL:
+                case OP_SET_LOCAL:
+                case OP_GET_GLOBAL:
+                case OP_SET_GLOBAL:
+                case OP_LOGICAL_NOT:
+                case OP_DUP:
+                case OP_CALL:
+                    instrLen = 2;
+                    if (i + 1 >= code.size()) {
+                        throw std::runtime_error("Invalid instruction length in eliminateUnreachableCode.");
+                    }
+                    optimizedCode.emplace_back(code[i + 1]);
+                    break;
+                case OP_ADD:
+                case OP_SUB:
+                case OP_MUL:
+                case OP_DIV:
+                case OP_COMPARE:
+                case OP_ARRAY:
+                case OP_ARRAY_GET:
+                case OP_ARRAY_SET:
+                case OP_NIL:
+                case OP_HALT:
+                case OP_RETURN:
+                    instrLen = 1;
+                    break;
+                default:
+                    throw std::runtime_error(
+                        "Unknown opcode encountered in eliminateUnreachableCode: " + std::to_string(opcode));
+            }
+
+            // Проверяем, является ли текущая инструкция завершением выполнения
+            if (opcode == OP_RETURN || opcode == OP_HALT) {
+                // Любой код после этой инструкции считается недостижимым
+                break;
+            }
+
+            i += instrLen;
+        }
+
+        // Устанавливаем оптимизированный байткод
+        co->code = optimizedCode;
+    }
+
+
+    void eliminateRedundantLoadsAndStores(CodeObject *co) {
+        // удаление избыточных загрузок/сохранений
+        std::vector<uint8_t> &code = co->code;
+        bool changed = true;
+
+        while (changed) {
+            changed = false;
+            for (size_t i = 0; i + 2 < code.size(); i++) {
+                if (code[i] == OP_GET_LOCAL && code[i + 2] == OP_SET_LOCAL) {
+                    uint8_t local1 = code[i + 1];
+                    uint8_t local2 = code[i + 3];
+                    if (local1 == local2) {
+                        // Если сразу после GET_LOCAL x идёт SET_LOCAL x без использования значения,
+                        // убираем GET_LOCAL
+                        code.erase(code.begin() + i, code.begin() + i + 2);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+
     std::vector<EvaluationValue> locals;
 
-    //Global object
+
     std::shared_ptr<Global> global;
 
-    //Stack pointer
-    /*std::array<EvaluationValue, STACK_LIMIT> stack;
-    std::array<EvaluationValue, STACK_LIMIT>::iterator sp = stack.begin();*/
 
     std::vector<EvaluationValue> stack;
 
-
     std::unique_ptr<syntax::parser> _parser;
 
-    // Code object
     CodeObject *co;
 
     std::vector<CallFrame> callStack;
@@ -319,40 +386,17 @@ public:
 
     std::unordered_map<std::string, CodeObject *> builtins;
 
-    std::unordered_map<CodeObject*, CodeObject*> jitCache;
+    std::unordered_map<CodeObject *, CodeObject *> jitCache;
+
+    std::unique_ptr<Disassembler> disassembler;
 };
 
 
-// Define a function pointer type for handlers
-
-
-// For any null handlers, we should ensure they throw an error if reached:
-static void verifyHandlers() {
-    for (int i = 0; i <= 0xFF; i++) {
-        if (handlers[i] == nullptr) {
-            handlers[i] = [](vm *, CallFrame &, uint8_t *&) {
-                throw std::runtime_error("No handler implemented for this opcode");
-            };
-        }
-    }
-}
-
-// Call this before running evalExp() to ensure no null handlers remain
-// In this example, we do it right after defining them
-static bool handlersInitialized = []() {
-    verifyHandlers();
-    return true;
-}();
-
-
-// ====================== Handler Implementations ======================
-
 static void handleHalt(vm *machine, CallFrame &frame, uint8_t *&ip) {
-    // Return top of stack or NIL if empty, and end execution
     EvaluationValue result = IS_NIL(machine->peek()) ? NIL() : machine->pop();
-    // Clear call stack to end execution
+
     machine->callStack.clear();
-    // Push result back if you want final result:
+
     machine->push(result);
 }
 
@@ -473,26 +517,16 @@ static void handleLogicalNot(vm *machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(BOOLEAN(result));
 }
 
-static void handleLogicalAnd(vm *machine, CallFrame &frame, uint8_t *&ip) {
-    // If desired, implement logical AND short-circuiting if needed
-    // For now, throw if not implemented
-    throw std::runtime_error("OP_LOGICAL_AND not implemented in handlers");
-}
-
-static void handleLogicalOr(vm *machine, CallFrame &frame, uint8_t *&ip) {
-    // If desired, implement logical OR short-circuiting if needed
-    throw std::runtime_error("OP_LOGICAL_OR not implemented in handlers");
-}
 
 static void handleJumpIfFalseOrPop(vm *machine, CallFrame &frame, uint8_t *&ip) {
     uint16_t address = (ip[0] << 8) | ip[1];
     ip += 2;
     auto value = machine->peek();
     if (!machine->isTruth(value)) {
-        machine->pop(); // Remove the value
+        machine->pop();
         ip = &frame.co->code[address];
     } else {
-        machine->pop(); // Remove the value if not jumping
+        machine->pop();
     }
 }
 
@@ -501,10 +535,10 @@ static void handleJumpIfTrueOrPop(vm *machine, CallFrame &frame, uint8_t *&ip) {
     ip += 2;
     auto value = machine->peek();
     if (machine->isTruth(value)) {
-        machine->pop(); // Remove the value
+        machine->pop();
         ip = &frame.co->code[address];
     } else {
-        machine->pop(); // Remove the value if not jumping
+        machine->pop();
     }
 }
 
@@ -550,7 +584,7 @@ static void handleCall(vm *machine, CallFrame &frame, uint8_t *&ip) {
             functionCo = it->second;
         } else {
             // Нет в кэше -> оптимизируем и добавляем в кэш
-            CodeObject* optimizedCo = machine->_bytecodeGenerator->optimizeBytecode(originalFunctionCo);
+            CodeObject *optimizedCo = machine->optimizeBytecode(originalFunctionCo);
             machine->jitCache[originalFunctionCo] = optimizedCo;
             functionCo = optimizedCo;
         }
@@ -579,18 +613,16 @@ static void handleCall(vm *machine, CallFrame &frame, uint8_t *&ip) {
 }
 
 
-
 static void handleReturn(vm *machine, CallFrame &frame, uint8_t *&ip) {
     EvaluationValue returnValue = machine->pop();
     machine->callStack.pop_back();
 
     if (machine->callStack.empty()) {
-        // No more frames, this ends execution
         machine->push(returnValue);
         return;
     }
 
-    // Push the return value onto the previous frame's stack
+
     machine->push(returnValue);
 }
 
@@ -643,10 +675,3 @@ static void handleArraySet(vm *machine, CallFrame &frame, uint8_t *&ip) {
 static void handleNil(vm *machine, CallFrame &frame, uint8_t *&ip) {
     machine->push(NIL());
 }
-
-/*static void handlePrint(vm *machine, CallFrame &frame, uint8_t *&ip) {
-    EvaluationValue val = machine->peek();
-
-    std::string output = evaluationValueToConstantString(val);
-    std::cout << output << std::endl;
-}*/
