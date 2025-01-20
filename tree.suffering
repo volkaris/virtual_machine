@@ -1,0 +1,81 @@
+func TreeNode(left, right, item, depth) {
+    var node = [];
+    node[0] = left;
+    node[1] = right;
+    node[2] = item;
+    node[3] = depth;
+    return node;
+}
+
+func itemCheck(node) {
+    if (node[3] == 0) {
+        return node[2];
+    } else {
+        return node[2] + itemCheck(node[0]) - itemCheck(node[1]);
+    }
+}
+
+func bottomUpTree(item, depth) {
+    if (depth > 0) {
+        return TreeNode(
+            bottomUpTree(2 * item - 1, depth - 1),
+            bottomUpTree(2 * item,     depth - 1),
+            item,
+            depth
+        );
+    } else {
+        return TreeNode(0, 0, item, 0);
+    }
+}
+
+func pow2(exp) {
+    var result = 1;
+    while (exp > 0) {
+        result = result * 2;
+        exp = exp - 1;
+    }
+    return result;
+}
+
+func main() {
+    var ret = 0;
+
+    for (var n = 4; n <= 7; n = n + 1) {
+        var minDepth = 4;
+
+        var maxDepth = 0;
+        if ((minDepth + 2) > n) {
+            maxDepth = minDepth + 2;
+        } else {
+            maxDepth = n;
+        }
+
+        var stretchDepth = maxDepth + 1;
+        var check = itemCheck(bottomUpTree(0, stretchDepth));
+
+        var longLivedTree = bottomUpTree(0, maxDepth);
+
+        for (var depth = minDepth; depth <= maxDepth; depth = depth + 2) {
+            var iterations = pow2(maxDepth - depth + minDepth);
+
+            check = 0;
+
+            for (var i = 1; i <= iterations; i = i + 1) {
+                check = check + itemCheck(bottomUpTree(i,  depth));
+                check = check + itemCheck(bottomUpTree(0 - i, depth));
+            }
+        }
+
+        ret = ret + itemCheck(longLivedTree);
+    }
+
+    var expected = 0 - 4;
+    if (ret != expected) {
+        print("ERROR: bad result: expected ");
+        print(expected);
+        print(" but got ");
+        print(ret);
+    }
+}
+
+main();
